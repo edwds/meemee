@@ -1,5 +1,5 @@
 
-import { DiscoverRestaurant } from '../types';
+import { DiscoverRestaurant, LeaderboardUser } from '../types';
 
 export const DUMMY_DISCOVER_DATA: DiscoverRestaurant[] = [
   {
@@ -10,7 +10,8 @@ export const DUMMY_DISCOVER_DATA: DiscoverRestaurant[] = [
     menu: '돈코츠 라멘, 마제소바',
     keywords: ['묵직한', '혼밥 적합', '감칠맛'],
     tasteProfile: { spiciness: 2, sweetness: 2, saltiness: 5, acidity: 1, richness: 5 },
-    visitedFriends: ['민지', '철수']
+    visitedFriends: ['민지', '철수'],
+    area: '성수'
   },
   {
     id: 'd-2',
@@ -20,7 +21,8 @@ export const DUMMY_DISCOVER_DATA: DiscoverRestaurant[] = [
     menu: '육회 김밥, 떡볶이',
     keywords: ['캐주얼', '매콤한', '활기찬'],
     tasteProfile: { spiciness: 4, sweetness: 4, saltiness: 3, acidity: 2, richness: 3 },
-    visitedFriends: ['지은']
+    visitedFriends: ['지은'],
+    area: '도산공원'
   },
   {
     id: 'd-3',
@@ -30,7 +32,8 @@ export const DUMMY_DISCOVER_DATA: DiscoverRestaurant[] = [
     menu: '스콘, 얼그레이 케이크',
     keywords: ['감성적', '데이트용', '부드러운'],
     tasteProfile: { spiciness: 1, sweetness: 5, saltiness: 2, acidity: 2, richness: 4 },
-    visitedFriends: ['수진', '현우', '나영']
+    visitedFriends: ['수진', '현우', '나영'],
+    area: '연남'
   },
   {
     id: 'd-4',
@@ -40,7 +43,8 @@ export const DUMMY_DISCOVER_DATA: DiscoverRestaurant[] = [
     menu: '비리아 타코, 과카몰리',
     keywords: ['이국적인', '활기찬', '가격 대비 좋음'],
     tasteProfile: { spiciness: 3, sweetness: 2, saltiness: 4, acidity: 4, richness: 3 },
-    visitedFriends: []
+    visitedFriends: [],
+    area: '이태원'
   },
   {
     id: 'd-5',
@@ -50,7 +54,8 @@ export const DUMMY_DISCOVER_DATA: DiscoverRestaurant[] = [
     menu: '스테이크 솥밥',
     keywords: ['정갈한', '서비스 친절', '담백한'],
     tasteProfile: { spiciness: 1, sweetness: 2, saltiness: 2, acidity: 1, richness: 2 },
-    visitedFriends: ['민수']
+    visitedFriends: ['민수'],
+    area: '한남'
   },
   {
     id: 'd-6',
@@ -60,7 +65,8 @@ export const DUMMY_DISCOVER_DATA: DiscoverRestaurant[] = [
     menu: '더블 치즈버거',
     keywords: ['묵직한', '미국맛', '캐주얼'],
     tasteProfile: { spiciness: 1, sweetness: 3, saltiness: 5, acidity: 2, richness: 5 },
-    visitedFriends: ['철수', '영희']
+    visitedFriends: ['철수', '영희'],
+    area: '성수'
   },
   {
     id: 'd-7',
@@ -70,7 +76,8 @@ export const DUMMY_DISCOVER_DATA: DiscoverRestaurant[] = [
     menu: '필터 커피',
     keywords: ['조용한', '혼밥 적합', '향긋한'],
     tasteProfile: { spiciness: 1, sweetness: 1, saltiness: 1, acidity: 4, richness: 2 },
-    visitedFriends: []
+    visitedFriends: [],
+    area: '한남'
   },
   {
     id: 'd-8',
@@ -80,7 +87,8 @@ export const DUMMY_DISCOVER_DATA: DiscoverRestaurant[] = [
     menu: '마라탕, 꿔바로우',
     keywords: ['자극적인', '매콤한', '중독성'],
     tasteProfile: { spiciness: 5, sweetness: 3, saltiness: 4, acidity: 2, richness: 4 },
-    visitedFriends: ['지훈', '유진']
+    visitedFriends: ['지훈', '유진'],
+    area: '강남'
   },
   {
     id: 'd-9',
@@ -90,7 +98,8 @@ export const DUMMY_DISCOVER_DATA: DiscoverRestaurant[] = [
     menu: '특선 초밥',
     keywords: ['신선한', '깔끔한', '재방문 의사 있음'],
     tasteProfile: { spiciness: 1, sweetness: 2, saltiness: 3, acidity: 3, richness: 3 },
-    visitedFriends: ['성민']
+    visitedFriends: ['성민'],
+    area: '청담'
   },
   {
     id: 'd-10',
@@ -100,6 +109,39 @@ export const DUMMY_DISCOVER_DATA: DiscoverRestaurant[] = [
     menu: '페퍼로니 피자',
     keywords: ['바삭한', '짭짤한', '맥주 안주'],
     tasteProfile: { spiciness: 2, sweetness: 2, saltiness: 5, acidity: 2, richness: 4 },
-    visitedFriends: ['민지', '영수', '다혜']
+    visitedFriends: ['민지', '영수', '다혜'],
+    area: '성수'
   }
 ];
+
+export const MOCK_ACTIVE_USERS: LeaderboardUser[] = [
+  { id: 'l-1', rank: 1, name: '맛잘알_김', avatar: 'https://i.pravatar.cc/150?u=1', level: 24, mbti: 'BZRH', stats: { count: 342, label: '기록' } },
+  { id: 'l-2', rank: 2, name: '카페투어', avatar: 'https://i.pravatar.cc/150?u=2', level: 18, mbti: 'MSLP', stats: { count: 215, label: '기록' } },
+  { id: 'l-3', rank: 3, name: '고독한미식가', avatar: 'https://i.pravatar.cc/150?u=3', level: 15, mbti: 'MZRP', stats: { count: 189, label: '기록' } },
+  { id: 'l-4', rank: 4, name: '빵순이', avatar: 'https://i.pravatar.cc/150?u=4', level: 12, mbti: 'BSLP', stats: { count: 156, label: '기록' } },
+  { id: 'l-5', rank: 5, name: '스시로', avatar: 'https://i.pravatar.cc/150?u=5', level: 11, mbti: 'MZLH', stats: { count: 132, label: '기록' } },
+];
+
+export const MOCK_POPULAR_USERS: LeaderboardUser[] = [
+  { id: 'p-1', rank: 1, name: '강민지', avatar: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?auto=format&fit=crop&w=100&q=80', level: 22, mbti: 'BSRH', stats: { count: 1540, label: '팔로워' } },
+  { id: 'p-2', rank: 2, name: '이현우', avatar: 'https://i.pravatar.cc/150?u=8', level: 19, mbti: 'BZRP', stats: { count: 1203, label: '팔로워' } },
+  { id: 'p-3', rank: 3, name: '박지은', avatar: 'https://i.pravatar.cc/150?u=9', level: 17, mbti: 'MSLH', stats: { count: 980, label: '팔로워' } },
+  { id: 'p-4', rank: 4, name: '최준호', avatar: 'https://i.pravatar.cc/150?u=10', level: 14, mbti: 'BZRH', stats: { count: 854, label: '팔로워' } },
+  { id: 'p-5', rank: 5, name: '김나영', avatar: 'https://i.pravatar.cc/150?u=11', level: 12, mbti: 'MSLP', stats: { count: 721, label: '팔로워' } },
+];
+
+export const MOCK_REGIONAL_DATA: Record<string, LeaderboardUser[]> = {
+  '성수': [
+    { id: 'r-1', rank: 1, name: '성수동힙스터', avatar: 'https://i.pravatar.cc/150?u=20', level: 15, mbti: 'BZRH', stats: { count: 45, label: '성수 기록' } },
+    { id: 'r-2', rank: 2, name: '카페러버', avatar: 'https://i.pravatar.cc/150?u=21', level: 12, mbti: 'MSLP', stats: { count: 38, label: '성수 기록' } },
+    { id: 'r-3', rank: 3, name: '팝업사냥꾼', avatar: 'https://i.pravatar.cc/150?u=22', level: 9, mbti: 'BSRH', stats: { count: 32, label: '성수 기록' } },
+  ],
+  '강남': [
+    { id: 'r-4', rank: 1, name: '강남직장인', avatar: 'https://i.pravatar.cc/150?u=25', level: 18, mbti: 'MZRP', stats: { count: 52, label: '강남 기록' } },
+    { id: 'r-5', rank: 2, name: '오마카세', avatar: 'https://i.pravatar.cc/150?u=26', level: 14, mbti: 'MZLH', stats: { count: 41, label: '강남 기록' } },
+  ],
+  '한남/이태원': [
+    { id: 'r-6', rank: 1, name: '브런치퀸', avatar: 'https://i.pravatar.cc/150?u=30', level: 20, mbti: 'BSLP', stats: { count: 60, label: '한남 기록' } },
+    { id: 'r-7', rank: 2, name: '와인러버', avatar: 'https://i.pravatar.cc/150?u=31', level: 16, mbti: 'BZLP', stats: { count: 48, label: '한남 기록' } },
+  ]
+};

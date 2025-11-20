@@ -9,6 +9,7 @@ import { Feed } from './pages/Feed';
 import { UserProfile } from './pages/UserProfile';
 import { Achievement } from './pages/Achievement';
 import { RestaurantDetail } from './pages/RestaurantDetail';
+import { Leaderboard } from './pages/Leaderboard';
 import { ReviewRecord, Preference } from './types';
 
 const LOCAL_STORAGE_KEY = 'gourmet_log_records_v1';
@@ -28,7 +29,8 @@ const SAMPLE_RECORDS: ReviewRecord[] = [
     keywords: ['조용한', '데이트용', '촉촉한', '만족스러움', '감칠맛'],
     aiGeneratedText: '입안에서 부드럽게 녹아내리는 네타의 숙성도가 훌륭하다. 샤리의 간은 적당하며, 은은한 산미가 생선의 감칠맛을 돋보이게 한다. 정갈한 분위기 속에서 즐기는 미식의 여운이 길게 남는다.',
     createdAt: 1716256000000,
-    rank: 1
+    rank: 1,
+    location: { lat: 37.5237, lng: 127.0419, address: '청담' }
   },
   {
     id: 'sample-2',
@@ -44,7 +46,8 @@ const SAMPLE_RECORDS: ReviewRecord[] = [
     keywords: ['묵직한', '고소한', '캐주얼', '재방문 의사 있음'],
     aiGeneratedText: '진득한 크림 소스의 풍미가 혀끝을 감싸며 강렬한 인상을 남긴다. 뇨끼의 쫄깃한 텍스처와 트러플의 향이 완벽한 밸런스를 이루며, 묵직한 바디감이 식사 후에도 기분 좋은 포만감을 선사한다.',
     createdAt: 1716170000000,
-    rank: 2
+    rank: 2,
+    location: { lat: 37.5446, lng: 127.0559, address: '성수' }
   },
   {
     id: 'sample-3',
@@ -59,7 +62,8 @@ const SAMPLE_RECORDS: ReviewRecord[] = [
     tasteProfile: { spiciness: 1, sweetness: 4, saltiness: 3, acidity: 1, richness: 4 },
     keywords: ['활기찬', '부드러운', '달콤한', '서비스 친절'],
     aiGeneratedText: '육질은 놀라울 정도로 부드럽고, 달콤한 양념이 고기 깊숙이 배어있다. 다만 단맛이 다소 강해 후반부에는 쉽게 물리는 경향이 있다. 활기찬 분위기는 가족 모임에 적합하다.',
-    createdAt: 1715700000000
+    createdAt: 1715700000000,
+    location: { lat: 37.5250, lng: 127.0450, address: '청담' }
   },
   {
     id: 'sample-4',
@@ -74,7 +78,8 @@ const SAMPLE_RECORDS: ReviewRecord[] = [
     tasteProfile: { spiciness: 1, sweetness: 4, saltiness: 1, acidity: 3, richness: 4 },
     keywords: ['조용한', '혼밥 적합', '가벼운'],
     aiGeneratedText: '진한 치즈의 풍미가 돋보이는 케이크와 산미 있는 커피의 조화가 무난하다. 특별한 임팩트는 없지만 편안한 분위기에서 가볍게 즐기기 좋은 구성이다.',
-    createdAt: 1715300000000
+    createdAt: 1715300000000,
+    location: { lat: 37.5348, lng: 126.9941, address: '이태원' }
   },
   {
     id: 'sample-5',
@@ -89,7 +94,8 @@ const SAMPLE_RECORDS: ReviewRecord[] = [
     tasteProfile: { spiciness: 5, sweetness: 2, saltiness: 5, acidity: 2, richness: 5 },
     keywords: ['자극적인', '아쉬움 있음', '묵직한'],
     aiGeneratedText: '압도적인 짠맛과 통제되지 않은 매운맛이 재료 본연의 맛을 완전히 가려버렸다. 묵직한 패티의 식감은 나쁘지 않았으나, 전체적인 밸런스가 무너져 미식으로서의 즐거움을 찾기 어려웠다.',
-    createdAt: 1714500000000
+    createdAt: 1714500000000,
+    location: { lat: 37.5386, lng: 127.0024, address: '한남' }
   }
 ];
 
@@ -156,6 +162,7 @@ const App: React.FC = () => {
         <Route path="/" element={<Home records={records} />} />
         <Route path="/feed" element={<Feed />} />
         <Route path="/discover" element={<Discover userRecords={records} />} />
+        <Route path="/leaderboard" element={<Leaderboard />} />
         <Route path="/create" element={<CreateRecord onSave={handleSaveRecord} existingRecords={records} />} />
         <Route path="/record/:id" element={<RecordDetail records={records} />} />
         <Route path="/profile/:userId" element={<UserProfile currentUserRecords={records} />} />

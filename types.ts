@@ -55,6 +55,7 @@ export interface DiscoverRestaurant {
   keywords: string[];
   tasteProfile: TasteProfile;
   visitedFriends: string[]; // List of friend names
+  area: string; // e.g. 성수, 강남
 }
 
 export interface FeedPost {
@@ -76,6 +77,20 @@ export interface Badge {
   color: string;
   description: string;
   condition: (records: ReviewRecord[]) => boolean;
+}
+
+export interface LeaderboardUser {
+  id: string;
+  rank: number;
+  name: string;
+  avatar: string;
+  level: number;
+  mbti: string; // e.g. BZRH
+  stats: {
+    count: number; // Records or Followers depending on context
+    label: string; // 'Records' or 'Followers'
+  };
+  region?: string; // For regional leaderboard
 }
 
 export const KEYWORD_DATA: Record<KeywordCategory, string[]> = {
