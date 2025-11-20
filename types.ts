@@ -25,6 +25,7 @@ export interface TasteProfile {
 export interface ReviewRecord {
   id: string;
   title: string; // Restaurant Name
+  category: string; // Cuisine Category (e.g. Korean, Cafe)
   photos: string[]; // Base64 strings
   representativePhoto: string;
   preference: Preference;
@@ -36,6 +37,38 @@ export interface ReviewRecord {
   aiGeneratedText: string;
   createdAt: number; // Timestamp
   rank?: number; // Optional ranking for 'GOOD' preference records
+}
+
+export interface DiscoverRestaurant {
+  id: string;
+  name: string;
+  category: string;
+  photo: string;
+  menu: string;
+  keywords: string[];
+  tasteProfile: TasteProfile;
+  visitedFriends: string[]; // List of friend names
+}
+
+export interface FeedPost {
+  id: string;
+  author: {
+    name: string;
+    avatar: string;
+  };
+  record: ReviewRecord;
+  likeCount: number;
+  isLiked: boolean;
+  timeAgo: string;
+}
+
+export interface Badge {
+  id: string;
+  label: string;
+  icon: React.ReactNode;
+  color: string;
+  description: string;
+  condition: (records: ReviewRecord[]) => boolean;
 }
 
 export const KEYWORD_DATA: Record<KeywordCategory, string[]> = {

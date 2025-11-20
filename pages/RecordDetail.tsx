@@ -64,9 +64,9 @@ export const RecordDetail: React.FC<RecordDetailProps> = ({ records }) => {
 
   // Helper to render taste bars
   const renderTasteBar = (label: string, value: number) => (
-    <div className="flex items-center mb-2">
-      <span className="w-16 text-xs text-gray-500">{label}</span>
-      <div className="flex-1 h-1.5 bg-gray-100 rounded-full overflow-hidden mx-2">
+    <div className="flex items-center mb-3">
+      <span className="w-16 text-xs font-medium text-gray-500">{label}</span>
+      <div className="flex-1 h-2 bg-gray-100 rounded-full overflow-hidden mx-3">
         <div 
           className="h-full bg-primary rounded-full" 
           style={{ width: `${(value / 5) * 100}%` }} 
@@ -77,25 +77,32 @@ export const RecordDetail: React.FC<RecordDetailProps> = ({ records }) => {
   );
 
   return (
-    <Layout title={record.title} showBack hasTabBar={false}>
+    <Layout title={record.title} showBack hasTabBar={false} scrollable={true}>
       <div className="pb-8">
         {/* Images Carousel */}
-        <div className="w-full h-72 bg-gray-200 overflow-x-auto flex snap-x snap-mandatory no-scrollbar">
+        <div className="w-full aspect-square bg-gray-100 overflow-x-auto flex snap-x snap-mandatory no-scrollbar">
           {record.photos.map((photo, idx) => (
-            <div key={idx} className="w-full flex-shrink-0 snap-center relative">
+            <div key={idx} className="w-full flex-shrink-0 snap-center relative h-full">
               <img src={photo} alt={`photo-${idx}`} className="w-full h-full object-cover" />
-              <div className="absolute bottom-4 right-4 bg-black/50 px-2 py-1 rounded-full text-white text-xs">
+              <div className="absolute bottom-4 right-4 bg-black/60 backdrop-blur-sm px-3 py-1 rounded-full text-white text-xs font-medium">
                 {idx + 1} / {record.photos.length}
               </div>
             </div>
           ))}
         </div>
 
-        <div className="px-6 -mt-6 relative z-10">
-          <div className="bg-white rounded-2xl shadow-lg p-6 border border-gray-100">
+        <div className="px-5 -mt-6 relative z-10">
+          <div className="bg-white rounded-3xl shadow-xl p-6 border border-gray-50">
             <div className="flex justify-between items-center mb-4">
-              <span className="text-2xl font-bold text-secondary">{record.title}</span>
-              <span className={`px-3 py-1 rounded-full text-sm font-medium ${
+              <div className="flex flex-col min-w-0 flex-1 pr-2">
+                {record.category && (
+                   <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider mb-1">
+                     {record.category}
+                   </span>
+                )}
+                <span className="text-2xl font-bold text-secondary truncate">{record.title}</span>
+              </div>
+              <span className={`flex-shrink-0 px-3 py-1 rounded-full text-sm font-medium ${
                 record.preference === '좋아요' ? 'bg-green-100 text-green-700' :
                 record.preference === '보통' ? 'bg-yellow-100 text-yellow-700' :
                 'bg-red-100 text-red-700'
@@ -105,36 +112,37 @@ export const RecordDetail: React.FC<RecordDetailProps> = ({ records }) => {
             </div>
 
             {/* Info Row */}
-            <div className="flex items-center space-x-4 mb-6 text-sm text-gray-500">
+            <div className="flex items-center space-x-5 mb-6 text-sm text-gray-500 border-b border-gray-100 pb-6">
               {record.visitDate && (
                 <div className="flex items-center">
-                  <Calendar size={14} className="mr-1 text-gray-400" />
+                  <Calendar size={16} className="mr-1.5 text-gray-400" />
                   {record.visitDate}
                 </div>
               )}
               {record.companions && (
                 <div className="flex items-center">
-                  <Users size={14} className="mr-1 text-gray-400" />
+                  <Users size={16} className="mr-1.5 text-gray-400" />
                   {record.companions}
                 </div>
               )}
             </div>
             
-            <p className="text-gray-500 text-sm mb-6 font-medium border-b border-gray-100 pb-4">
-              <span className="text-primary mr-2">MENU</span> {record.menu}
+            <p className="text-secondary text-base mb-6 font-medium">
+              <span className="text-primary text-xs font-bold uppercase tracking-wider block mb-1">MENU</span> 
+              {record.menu}
             </p>
 
-            <div className="relative mb-8">
-              <Quote className="absolute -top-2 -left-2 text-gray-100 w-8 h-8 rotate-180" />
-              <p className="text-gray-700 leading-relaxed whitespace-pre-wrap relative z-10 pl-4 border-l-2 border-primary">
+            <div className="relative mb-8 bg-gray-50 p-5 rounded-2xl">
+              <Quote className="absolute top-4 left-4 text-gray-200 w-6 h-6 rotate-180" />
+              <p className="text-gray-700 leading-loose whitespace-pre-wrap relative z-10 text-sm font-serif pt-2">
                 {record.aiGeneratedText}
               </p>
             </div>
 
             {/* Taste Profile Visualization */}
             {record.tasteProfile && (
-              <div className="mb-6 p-4 bg-gray-50 rounded-xl">
-                <h3 className="text-sm font-bold text-secondary mb-3">TASTE PROFILE</h3>
+              <div className="mb-8">
+                <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-4">Taste Profile</h3>
                 {renderTasteBar('매운맛', record.tasteProfile.spiciness)}
                 {renderTasteBar('단맛', record.tasteProfile.sweetness)}
                 {renderTasteBar('짠맛', record.tasteProfile.saltiness)}
@@ -145,7 +153,7 @@ export const RecordDetail: React.FC<RecordDetailProps> = ({ records }) => {
 
             <div className="flex flex-wrap gap-2">
               {record.keywords.map((k) => (
-                <span key={k} className="bg-white text-gray-600 px-3 py-1 rounded-lg text-xs border border-gray-200">
+                <span key={k} className="bg-white text-gray-600 px-3 py-1.5 rounded-xl text-xs font-medium border border-gray-200">
                   #{k}
                 </span>
               ))}
@@ -153,10 +161,10 @@ export const RecordDetail: React.FC<RecordDetailProps> = ({ records }) => {
           </div>
         </div>
 
-        <div className="px-6 mt-8">
-          <Button variant="secondary" fullWidth onClick={handleShare} isLoading={isSharing}>
-            <Share2 size={18} className="mr-2" />
-            카드 공유하기
+        <div className="px-6 mt-10 pb-safe">
+          <Button variant="secondary" fullWidth size="lg" onClick={handleShare} isLoading={isSharing}>
+            <Share2 size={20} className="mr-2" />
+            카드 이미지 저장
           </Button>
         </div>
 
@@ -169,6 +177,9 @@ export const RecordDetail: React.FC<RecordDetailProps> = ({ records }) => {
              <h2 className="text-2xl font-bold text-[#2E2E2E] mb-1">{record.title}</h2>
              <p className="text-xs text-gray-400 mb-3">{record.visitDate} | with {record.companions || 'Me'}</p>
              <div className="flex gap-2 mb-4">
+                {record.category && (
+                    <span className="text-xs bg-gray-200 text-gray-600 px-2 py-1 rounded">{record.category}</span>
+                )}
                 <span className="text-xs bg-[#FF6B35] text-white px-2 py-1 rounded">{record.preference}</span>
              </div>
              <p className="text-[#2E2E2E] text-center leading-relaxed mb-6 text-sm px-4">

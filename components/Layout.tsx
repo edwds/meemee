@@ -7,13 +7,15 @@ interface LayoutProps {
   title?: string;
   showBack?: boolean;
   hasTabBar?: boolean;
+  scrollable?: boolean;
 }
 
 export const Layout: React.FC<LayoutProps> = ({ 
   children, 
   title, 
   showBack = false,
-  hasTabBar = false 
+  hasTabBar = false,
+  scrollable = true
 }) => {
   const navigate = useNavigate();
 
@@ -22,25 +24,26 @@ export const Layout: React.FC<LayoutProps> = ({
   };
 
   return (
-    <div className="min-h-screen bg-gray-100 flex justify-center">
-      <div className="w-full max-w-md bg-background min-h-screen shadow-xl relative flex flex-col">
+    <div className="h-[100dvh] bg-gray-50 flex justify-center overflow-hidden">
+      <div className="w-full max-w-md bg-background h-full shadow-2xl relative flex flex-col">
         {/* Header */}
-        <header className="h-14 px-4 flex items-center justify-between bg-surface/80 backdrop-blur-md sticky top-0 z-10 border-b border-gray-100 flex-shrink-0">
+        <header className="h-14 px-4 flex items-center justify-between bg-surface/90 backdrop-blur-md sticky top-0 z-20 border-b border-gray-100 flex-shrink-0">
           <div className="w-10 flex items-center">
             {showBack && (
-              <button onClick={handleBack} className="p-2 -ml-2 rounded-full hover:bg-gray-100 text-gray-600 transition-colors">
+              <button onClick={handleBack} className="p-2 -ml-2 rounded-full hover:bg-gray-100 active:bg-gray-200 text-gray-600 transition-colors">
                 <ArrowLeft size={24} />
               </button>
             )}
           </div>
           
-          <h1 className="font-bold text-lg text-secondary truncate max-w-[200px]">{title || 'meemee'}</h1>
+          <h1 className="font-bold text-[17px] text-secondary truncate max-w-[200px]">{title || 'meemee'}</h1>
           
           <div className="w-10" /> {/* Spacer for alignment */}
         </header>
 
         {/* Content */}
-        <main className={`flex-1 overflow-y-auto no-scrollbar ${hasTabBar ? 'pb-24' : ''}`}>
+        {/* min-h-0 is crucial for nested flex scrolling */}
+        <main className={`flex-1 flex flex-col min-h-0 relative ${scrollable ? 'overflow-y-auto overflow-x-hidden' : 'overflow-hidden'} ${hasTabBar && scrollable ? 'pb-[100px]' : ''}`}>
           {children}
         </main>
       </div>

@@ -33,6 +33,10 @@
         background-color: #F8F7F4; 
         color: #2E2E2E; 
         color-scheme: light; /* Force light mode for standard browser elements */
+        overscroll-behavior: none; /* Prevent bounce on mobile */
+        position: fixed; /* Fix body to viewport to prevent background scrolling */
+        width: 100%;
+        height: 100%;
       }
       /* Hide scrollbar for horizontal scrolling areas */
       .no-scrollbar::-webkit-scrollbar {
@@ -56,6 +60,12 @@
     "exif-js": "https://aistudiocdn.com/exif-js@^2.3.0"
   }
 }
+</script>
+<script>
+  // Shim process for libraries that expect it (like html2canvas/exif-js in some bundlers)
+  if (typeof window.process === 'undefined') {
+    window.process = { env: {} };
+  }
 </script>
 </head>
   <body>

@@ -1,6 +1,6 @@
 
 import { GoogleGenAI } from "@google/genai";
-import { Preference, ReviewStyle, TasteProfile, KEYWORD_DATA } from '../types';
+import { Preference, ReviewStyle, TasteProfile, KEYWORD_DATA, ReviewRecord } from '../types';
 
 const getClient = () => {
   const apiKey = process.env.API_KEY;
@@ -104,7 +104,14 @@ Generate the text now.
   }
 };
 
-export const analyzeMenuFromImages = async (base64Images: string[]): Promise<string> => {
+export interface AnalyzedContext {
+  placeName?: string;
+  menu?: string;
+  category?: string;
+  keywords?: string[];
+}
+
+export const analyzeImageContext = async (base64Images: string[]): Promise<AnalyzedContext> => {
   try {
     const ai = getClient();
     
@@ -120,31 +127,6 @@ export const analyzeMenuFromImages = async (base64Images: string[]): Promise<str
       };
     });
 
-    const prompt = `
-      Look at these food photos.
-      Identify the most likely menu names.
-      Return ONLY the menu names separated by commas (e.g. "Truffle Pasta, Steak, Lemonade").
-      If you are unsure, give your best guess.
-      Respond in Korean.
-    `;
-
-    const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
-      contents: {
-        parts: [...imageParts, { text: prompt }]
-      }
-    });
-
-    return response.text?.trim() || "";
-  } catch (error) {
-    console.error("Menu analysis error:", error);
-    return "";
-  }
-};
-
-export const recommendKeywords = async (menu: string): Promise<string[]> => {
-  try {
-    const ai = getClient();
     const allKeywords = [
       ...KEYWORD_DATA.Texture,
       ...KEYWORD_DATA.Vibe,
@@ -152,21 +134,113 @@ export const recommendKeywords = async (menu: string): Promise<string[]> => {
     ];
 
     const prompt = `
-      Given the menu "${menu}", select the 3-5 most relevant keywords from this list:
-      [${allKeywords.join(', ')}]
+      Analyze these food photos to extract information for a gourmet log.
       
-      Return ONLY the selected keywords separated by commas.
+      1. **Place Name**: 
+         - FIRST, look for text on menus, napkins, or signage to find the *real* name.
+         - **IF NO NAME IS VISIBLE**: Creatively invent a **realistic, trendy, and catchy restaurant name** in Korean that perfectly matches the food and vibe.
+         - Examples of creative generation: '성수동 파스타 클럽', '스시 오마카세 젠', '카페 멜로우', '청담 숯불갈비'.
+         - Do NOT use generic terms like "Unknown Restaurant" or "Italian Food". Make it sound like a real hot place.
+      
+      2. **Category**: Identify the cuisine category (e.g., "Korean", "Japanese", "Cafe", "Bar", "Fine Dining").
+      
+      3. **Menu**: Identify the main dishes shown.
+      
+      4. **Keywords**: Select 3-5 most relevant keywords from this list: [${allKeywords.join(', ')}].
+
+      **IMPORTANT**: ALL OUTPUT VALUES MUST BE IN KOREAN (Hangul).
+      
+      Output strictly in JSON format:
+      {
+        "placeName": "...",
+        "category": "...", 
+        "menu": "...",
+        "keywords": ["...", "..."]
+      }
     `;
 
     const response = await ai.models.generateContent({
       model: 'gemini-2.5-flash',
-      contents: prompt
+      contents: {
+        parts: [...imageParts, { text: prompt }]
+      },
+      config: {
+        responseMimeType: 'application/json'
+      }
     });
 
-    const text = response.text || "";
-    return text.split(',').map(s => s.trim()).filter(s => allKeywords.includes(s));
+    const text = response.text;
+    if (!text) return {};
+
+    try {
+      return JSON.parse(text) as AnalyzedContext;
+    } catch (e) {
+      console.warn("Failed to parse JSON from Gemini", text);
+      // Fallback if JSON parsing fails
+      return { menu: text.slice(0, 50) };
+    }
   } catch (error) {
-    console.error("Keyword recommendation error:", error);
-    return [];
+    console.error("Context analysis error:", error);
+    return {};
   }
-}
+};
+
+export const analyzeUserTaste = async (records: ReviewRecord[]): Promise<string> => {
+  if (records.length === 0) return "아직 분석할 데이터가 없어요.";
+
+  try {
+    const ai = getClient();
+
+    // Calculate Averages
+    const total = records.length;
+    const sums = records.reduce((acc, r) => ({
+      spiciness: acc.spiciness + r.tasteProfile.spiciness,
+      sweetness: acc.sweetness + r.tasteProfile.sweetness,
+      saltiness: acc.saltiness + r.tasteProfile.saltiness,
+      acidity: acc.acidity + r.tasteProfile.acidity,
+      richness: acc.richness + r.tasteProfile.richness,
+    }), { spiciness: 0, sweetness: 0, saltiness: 0, acidity: 0, richness: 0 });
+
+    const avg = {
+      spiciness: (sums.spiciness / total).toFixed(1),
+      sweetness: (sums.sweetness / total).toFixed(1),
+      saltiness: (sums.saltiness / total).toFixed(1),
+      acidity: (sums.acidity / total).toFixed(1),
+      richness: (sums.richness / total).toFixed(1),
+    };
+
+    // Frequent Categories
+    const categories = records.map(r => r.category).filter(Boolean);
+    const topCategories = categories.slice(0, 5).join(', ');
+
+    const prompt = `
+      Based on the user's gourmet history, create a short, witty, and insightful "One-line Gastronomic Personality" (Taste MBTI).
+
+      **User Data:**
+      - Total Records: ${total}
+      - Favorite Categories: ${topCategories}
+      - Average Taste Profile (1-5): 
+        Spicy ${avg.spiciness}, Sweet ${avg.sweetness}, Salty ${avg.saltiness}, Acidic ${avg.acidity}, Rich ${avg.richness}
+
+      **Task:**
+      - Define the user's palate personality in **one Korean sentence**.
+      - Be fun, specific, and "hip".
+      - Examples:
+        - "매콤함과 묵직한 바디감을 즐기는 화끈한 미식가"
+        - "섬세한 산미와 가벼운 식감을 사랑하는 카페 투어리스트"
+        - "극강의 단짠단짠을 찾아 헤매는 자극 추구형"
+      
+      Output MUST be Korean text only. Max 40 characters.
+    `;
+
+    const response = await ai.models.generateContent({
+      model: 'gemini-2.5-flash',
+      contents: prompt,
+    });
+
+    return response.text?.trim() || "다양한 맛을 즐기는 미식 탐험가";
+  } catch (error) {
+    console.error("Taste Analysis Error:", error);
+    return "나만의 취향을 만들어가는 중...";
+  }
+};
