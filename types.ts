@@ -22,6 +22,12 @@ export interface TasteProfile {
   richness: number;
 }
 
+export interface LocationData {
+  lat: number;
+  lng: number;
+  address?: string;
+}
+
 export interface ReviewRecord {
   id: string;
   title: string; // Restaurant Name
@@ -37,6 +43,7 @@ export interface ReviewRecord {
   aiGeneratedText: string;
   createdAt: number; // Timestamp
   rank?: number; // Optional ranking for 'GOOD' preference records
+  location?: LocationData;
 }
 
 export interface DiscoverRestaurant {

@@ -3,7 +3,7 @@ import React, { useMemo } from 'react';
 import { Layout } from '../components/Layout';
 import { ReviewRecord } from '../types';
 import { calculateLevel, BADGES } from '../utils/gamification';
-import { Trophy, Star, Lock, Sparkles, TrendingUp, Hash } from 'lucide-react';
+import { Trophy, Lock, Camera, MapPin, PenTool, Star, Target, Award } from 'lucide-react';
 
 interface AchievementProps {
   records: ReviewRecord[];
@@ -13,166 +13,144 @@ export const Achievement: React.FC<AchievementProps> = ({ records }) => {
   const { level, nextLevelThreshold, progress } = calculateLevel(records.length);
   const earnedBadgeIds = BADGES.filter(b => b.condition(records)).map(b => b.id);
   
-  // 1. Load Taste Identity from LocalStorage (Cached in Home.tsx)
-  const tasteIdentity = localStorage.getItem('meemee_taste_identity') || "나만의 미식을 찾아가는 중";
+  // --- Detailed Stats Calculation ---
+  const stats = useMemo(() => {
+    const totalPhotos = records.reduce((acc, r) => acc + r.photos.length, 0);
+    const totalAreas = new Set(records.map(r => r.location?.address || '').filter(Boolean)).size;
+    const totalWords = records.reduce((acc, r) => acc + (r.aiGeneratedText?.length || 0), 0);
+    const goodRatio = records.length > 0 
+        ? Math.round((records.filter(r => r.preference === '좋아요').length / records.length) * 100) 
+        : 0;
 
-  // 2. Calculate Taste Stats
-  const tasteStats = useMemo(() => {
-    if (records.length === 0) return null;
-    
-    const sums = records.reduce((acc, r) => ({
-      spiciness: acc.spiciness + r.tasteProfile.spiciness,
-      sweetness: acc.sweetness + r.tasteProfile.sweetness,
-      saltiness: acc.saltiness + r.tasteProfile.saltiness,
-      acidity: acc.acidity + r.tasteProfile.acidity,
-      richness: acc.richness + r.tasteProfile.richness,
-    }), { spiciness: 0, sweetness: 0, saltiness: 0, acidity: 0, richness: 0 });
-
-    const count = records.length;
-    return {
-      spiciness: sums.spiciness / count,
-      sweetness: sums.sweetness / count,
-      saltiness: sums.saltiness / count,
-      acidity: sums.acidity / count,
-      richness: sums.richness / count,
-    };
+    return { totalPhotos, totalAreas, totalWords, goodRatio };
   }, [records]);
 
-  // 3. Calculate Top Keywords
-  const topKeywords = useMemo(() => {
-    const counts: Record<string, number> = {};
-    records.forEach(r => {
-        r.keywords.forEach(k => {
-            counts[k] = (counts[k] || 0) + 1;
-        });
-    });
-    return Object.entries(counts)
-        .sort((a, b) => b[1] - a[1])
-        .slice(0, 3)
-        .map(([key]) => key);
-  }, [records]);
-
-  // Helper for Taste Description
-  const getTasteLabel = (val: number, type: string) => {
-    if (type === 'spiciness') return val > 3.5 ? '화끈한 매운맛 매니아' : val > 2 ? '적당한 매콤함 선호' : '순한맛 지향';
-    if (type === 'sweetness') return val > 3.5 ? '달콤한 디저트 러버' : val > 2 ? '은은한 단맛 선호' : '단맛은 적게';
-    if (type === 'richness') return val > 3.5 ? '진하고 묵직한 바디감' : val > 2 ? '적당한 풍미' : '가볍고 깔끔한 맛';
-    return val > 3 ? '강한 풍미 선호' : '밸런스 중시';
-  };
-
-  const renderTasteRow = (label: string, value: number, key: string, colorClass: string) => (
-    <div className="mb-4">
-        <div className="flex justify-between items-end mb-1">
-            <span className="text-xs font-bold text-gray-500">{label}</span>
-            <span className="text-[10px] font-medium text-primary">{getTasteLabel(value, key)}</span>
-        </div>
-        <div className="h-2 w-full bg-gray-100 rounded-full overflow-hidden">
-            <div 
-                className={`h-full rounded-full transition-all duration-1000 ${colorClass}`} 
-                style={{ width: `${(value / 5) * 100}%` }} 
-            />
-        </div>
-    </div>
-  );
+  // --- Next Quest Logic ---
+  const nextQuest = useMemo(() => {
+      // Find the first unearned badge
+      const unearned = BADGES.find(b => !earnedBadgeIds.includes(b.id));
+      if (unearned) {
+          return {
+              badge: unearned,
+              message: "다음 뱃지에 도전해보세요!"
+          };
+      }
+      return {
+          badge: null,
+          message: "모든 업적을 달성했습니다! 당신은 진정한 미식 마스터!"
+      };
+  }, [earnedBadgeIds]);
 
   return (
-    <Layout title="마이 미식 리포트" showBack hasTabBar={true}>
+    <Layout title="미식 여정" showBack hasTabBar={true}>
       <div className="pb-8 px-5 pt-4">
         
-        {/* 1. Identity Card */}
-        <section className="bg-secondary text-white rounded-[2rem] p-6 shadow-xl relative overflow-hidden mb-6">
-             {/* Background Deco */}
-            <div className="absolute top-0 right-0 w-32 h-32 bg-primary/20 rounded-full blur-3xl -translate-y-10 translate-x-10"></div>
-            <div className="absolute bottom-0 left-0 w-32 h-32 bg-blue-500/20 rounded-full blur-3xl translate-y-10 -translate-x-10"></div>
+        {/* 1. LEVEL HERO SECTION */}
+        <section className="bg-secondary text-white rounded-[2rem] p-8 shadow-xl relative overflow-hidden mb-6 flex flex-col items-center text-center border border-gray-700">
+            {/* Glow Effects */}
+            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-64 h-64 bg-primary/20 rounded-full blur-[80px] pointer-events-none"></div>
+            
+            <div className="relative z-10 mb-4">
+                {/* Circular Progress */}
+                <div className="relative w-40 h-40 flex items-center justify-center">
+                    <svg className="w-full h-full -rotate-90" viewBox="0 0 36 36">
+                        {/* Background Circle */}
+                        <path
+                            className="text-gray-700"
+                            d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="3"
+                        />
+                        {/* Progress Circle */}
+                        <path
+                            className="text-primary drop-shadow-[0_0_10px_rgba(255,107,53,0.5)]"
+                            d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="3"
+                            strokeDasharray={`${progress}, 100`}
+                            strokeLinecap="round"
+                        />
+                    </svg>
+                    <div className="absolute inset-0 flex flex-col items-center justify-center">
+                        <span className="text-sm font-bold text-gray-400 uppercase tracking-widest mb-1">Level</span>
+                        <span className="text-5xl font-black tracking-tighter text-white">{level}</span>
+                    </div>
+                </div>
+            </div>
 
-            <div className="relative z-10 flex flex-col items-center text-center">
-                <div className="w-20 h-20 rounded-full p-1 bg-gradient-to-tr from-primary to-yellow-400 mb-3">
-                    <img 
-                        src="https://images.unsplash.com/photo-1563237023-b1e970526dcb?auto=format&fit=crop&w=400&q=80" 
-                        alt="Profile" 
-                        className="w-full h-full object-cover rounded-full border-2 border-secondary"
-                    />
+            <h2 className="text-xl font-bold mb-1">Gourmet Collector</h2>
+            <p className="text-sm text-gray-400 mb-4">다음 레벨까지 <span className="text-primary font-bold">{Math.ceil(5 - (records.length % 5))}개</span>의 기록이 필요해요</p>
+            
+            <div className="bg-white/10 px-4 py-2 rounded-xl text-xs font-medium border border-white/10">
+                현재 경험치: <span className="text-white font-bold">{records.length} XP</span>
+            </div>
+        </section>
+
+        {/* 2. NEXT QUEST (Motivation) */}
+        {nextQuest.badge && (
+            <section className="mb-6">
+                <div className="flex items-center gap-2 mb-3 px-1">
+                    <Target className="text-red-500" size={20} />
+                    <h3 className="font-bold text-secondary text-lg">다음 목표 (Next Quest)</h3>
                 </div>
                 
-                <div className="flex items-center gap-2 mb-1">
-                    <h2 className="text-xl font-bold">edwards</h2>
-                    <span className="bg-white/10 text-white px-2 py-0.5 rounded text-[10px] font-bold border border-white/20">
-                        Lv.{level}
-                    </span>
+                <div className="bg-gradient-to-r from-orange-50 to-white p-5 rounded-2xl border border-orange-100 shadow-sm flex items-center gap-4 relative overflow-hidden">
+                    <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center shadow-sm text-gray-300 flex-shrink-0 border border-gray-100">
+                        <Lock size={20} />
+                    </div>
+                    <div>
+                        <div className="text-[10px] font-bold text-primary uppercase tracking-wider mb-1">LOCKED BADGE</div>
+                        <h4 className="font-bold text-secondary text-base">{nextQuest.badge.label}</h4>
+                        <p className="text-xs text-gray-500 mt-0.5">{nextQuest.badge.description}</p>
+                    </div>
+                    <Award className="absolute right-[-10px] bottom-[-10px] text-orange-100 rotate-12" size={80} />
                 </div>
+            </section>
+        )}
 
-                <div className="bg-white/10 backdrop-blur-md rounded-xl px-4 py-2 mt-2 border border-white/10">
-                    <div className="flex items-center justify-center gap-2 text-orange-300 mb-1">
-                        <Sparkles size={14} />
-                        <span className="text-[10px] font-bold tracking-widest uppercase">TASTE IDENTITY</span>
+        {/* 3. DETAILED STATS GRID */}
+        <section className="mb-8">
+             <h3 className="font-bold text-secondary text-lg mb-4 px-1">활동 요약</h3>
+             <div className="grid grid-cols-2 gap-3">
+                <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm flex flex-col justify-between h-24">
+                    <div className="flex justify-between items-start">
+                        <span className="text-xs text-gray-400 font-medium">총 기록 사진</span>
+                        <Camera size={16} className="text-blue-400" />
                     </div>
-                    <p className="text-sm font-medium leading-relaxed">"{tasteIdentity}"</p>
+                    <span className="text-2xl font-bold text-secondary">{stats.totalPhotos}</span>
                 </div>
-
-                {/* Next Level Progress */}
-                <div className="w-full mt-6">
-                    <div className="flex justify-between text-[10px] text-gray-400 mb-1.5">
-                        <span>Current Lv.{level}</span>
-                        <span className="text-primary">Next Lv.{level + 1}</span>
+                <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm flex flex-col justify-between h-24">
+                    <div className="flex justify-between items-start">
+                        <span className="text-xs text-gray-400 font-medium">방문한 지역</span>
+                        <MapPin size={16} className="text-green-400" />
                     </div>
-                    <div className="h-1.5 w-full bg-white/10 rounded-full overflow-hidden">
-                        <div 
-                            className="h-full bg-gradient-to-r from-primary to-yellow-400"
-                            style={{ width: `${progress}%` }}
-                        ></div>
-                    </div>
-                    <p className="text-[10px] text-gray-400 mt-2 text-right">
-                        다음 레벨까지 기록 <span className="text-white font-bold">{nextLevelThreshold - records.length}</span>개 남음
-                    </p>
+                    <span className="text-2xl font-bold text-secondary">{stats.totalAreas}</span>
                 </div>
-            </div>
+                <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm flex flex-col justify-between h-24">
+                    <div className="flex justify-between items-start">
+                        <span className="text-xs text-gray-400 font-medium">미식 만족도</span>
+                        <Star size={16} className="text-yellow-400" />
+                    </div>
+                    <span className="text-2xl font-bold text-secondary">{stats.goodRatio}%</span>
+                </div>
+                <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm flex flex-col justify-between h-24">
+                    <div className="flex justify-between items-start">
+                        <span className="text-xs text-gray-400 font-medium">기록한 글자수</span>
+                        <PenTool size={16} className="text-purple-400" />
+                    </div>
+                    <span className="text-2xl font-bold text-secondary">{stats.totalWords}</span>
+                </div>
+             </div>
         </section>
 
-        {/* 2. Taste DNA Analysis */}
-        <section className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100 mb-6">
-            <div className="flex items-center gap-2 mb-6">
-                <div className="p-2 bg-orange-50 rounded-lg text-primary">
-                    <TrendingUp size={20} />
-                </div>
-                <div>
-                    <h3 className="font-bold text-secondary text-lg">나의 입맛 DNA</h3>
-                    <p className="text-xs text-gray-400">기록을 바탕으로 분석한 평균 데이터</p>
-                </div>
-            </div>
-
-            {tasteStats ? (
-                <div className="space-y-1">
-                    {renderTasteRow('맵기 선호도', tasteStats.spiciness, 'spiciness', 'bg-red-400')}
-                    {renderTasteRow('단맛 선호도', tasteStats.sweetness, 'sweetness', 'bg-pink-400')}
-                    {renderTasteRow('바디감/풍미', tasteStats.richness, 'richness', 'bg-orange-400')}
-                </div>
-            ) : (
-                <p className="text-center text-gray-400 text-sm py-4">아직 분석할 데이터가 부족해요</p>
-            )}
-
-            {/* Top Keywords */}
-            {topKeywords.length > 0 && (
-                <div className="mt-6 pt-6 border-t border-gray-50">
-                    <h4 className="text-xs font-bold text-gray-400 mb-3 flex items-center">
-                        <Hash size={12} className="mr-1" /> 자주 쓰는 표현
-                    </h4>
-                    <div className="flex flex-wrap gap-2">
-                        {topKeywords.map(k => (
-                            <span key={k} className="px-3 py-1.5 bg-secondary text-white rounded-xl text-xs font-bold shadow-sm">
-                                #{k}
-                            </span>
-                        ))}
-                    </div>
-                </div>
-            )}
-        </section>
-
-        {/* 3. Badge Collection */}
+        {/* 4. BADGE COLLECTION (Hall of Fame) */}
         <section>
             <div className="flex items-center justify-between mb-4 px-1">
                 <h3 className="font-bold text-secondary text-lg flex items-center">
                     <Trophy className="text-yellow-500 mr-2" size={20} />
-                    수집한 뱃지
+                    뱃지 컬렉션
                 </h3>
                 <span className="text-xs font-bold text-primary bg-orange-50 px-2 py-1 rounded-lg">
                     {earnedBadgeIds.length} / {BADGES.length}
@@ -193,7 +171,7 @@ export const Achievement: React.FC<AchievementProps> = ({ records }) => {
                     }`}
                   >
                     {/* Badge Icon */}
-                    <div className={`w-10 h-10 rounded-full flex items-center justify-center mb-2 transition-transform group-hover:scale-110 ${
+                    <div className={`w-10 h-10 rounded-full flex items-center justify-center mb-2 transition-transform ${
                         isUnlocked ? badge.color : 'bg-gray-200 text-gray-400 grayscale'
                     }`}>
                         {isUnlocked ? badge.icon : <Lock size={16} />}
@@ -203,26 +181,17 @@ export const Achievement: React.FC<AchievementProps> = ({ records }) => {
                         {badge.label}
                     </span>
 
-                    {!isUnlocked && (
-                        <div className="absolute inset-0 bg-white/0 group-hover:bg-white/90 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100">
-                            <p className="text-[9px] text-gray-500 px-2 font-medium break-keep">
-                                {badge.description}
-                            </p>
-                        </div>
-                    )}
+                    {/* Tooltip / Overlay */}
+                    <div className="absolute inset-0 bg-black/80 text-white flex items-center justify-center opacity-0 group-active:opacity-100 group-hover:opacity-100 transition-opacity p-2 z-20 pointer-events-none">
+                        <p className="text-[9px] font-medium break-keep">
+                            {badge.description}
+                        </p>
+                    </div>
                   </div>
                 );
               })}
            </div>
         </section>
-
-        {/* Motivation Text */}
-        <div className="mt-8 text-center pb-4">
-            <p className="text-xs text-gray-400">
-                더 많은 기록을 남기고<br/>새로운 미식 칭호를 획득해보세요!
-            </p>
-        </div>
-
       </div>
     </Layout>
   );

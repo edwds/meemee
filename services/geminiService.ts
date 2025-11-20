@@ -109,6 +109,7 @@ export interface AnalyzedContext {
   menu?: string;
   category?: string;
   keywords?: string[];
+  area?: string;
 }
 
 export const analyzeImageContext = async (base64Images: string[]): Promise<AnalyzedContext> => {
@@ -140,13 +141,14 @@ export const analyzeImageContext = async (base64Images: string[]): Promise<Analy
          - FIRST, look for text on menus, napkins, or signage to find the *real* name.
          - **IF NO NAME IS VISIBLE**: Creatively invent a **realistic, trendy, and catchy restaurant name** in Korean that perfectly matches the food and vibe.
          - Examples of creative generation: '성수동 파스타 클럽', '스시 오마카세 젠', '카페 멜로우', '청담 숯불갈비'.
-         - Do NOT use generic terms like "Unknown Restaurant" or "Italian Food". Make it sound like a real hot place.
       
       2. **Category**: Identify the cuisine category (e.g., "Korean", "Japanese", "Cafe", "Bar", "Fine Dining").
       
       3. **Menu**: Identify the main dishes shown.
+
+      4. **Area**: Infer the district or neighborhood name (e.g., '성수동', '강남구', '이태원', '홍대') from receipt addresses or general vibe. If unknown, assume a popular food district in Seoul.
       
-      4. **Keywords**: Select 3-5 most relevant keywords from this list: [${allKeywords.join(', ')}].
+      5. **Keywords**: Select 3-5 most relevant keywords from this list: [${allKeywords.join(', ')}].
 
       **IMPORTANT**: ALL OUTPUT VALUES MUST BE IN KOREAN (Hangul).
       
@@ -155,6 +157,7 @@ export const analyzeImageContext = async (base64Images: string[]): Promise<Analy
         "placeName": "...",
         "category": "...", 
         "menu": "...",
+        "area": "...",
         "keywords": ["...", "..."]
       }
     `;
@@ -186,61 +189,6 @@ export const analyzeImageContext = async (base64Images: string[]): Promise<Analy
 };
 
 export const analyzeUserTaste = async (records: ReviewRecord[]): Promise<string> => {
-  if (records.length === 0) return "아직 분석할 데이터가 없어요.";
-
-  try {
-    const ai = getClient();
-
-    // Calculate Averages
-    const total = records.length;
-    const sums = records.reduce((acc, r) => ({
-      spiciness: acc.spiciness + r.tasteProfile.spiciness,
-      sweetness: acc.sweetness + r.tasteProfile.sweetness,
-      saltiness: acc.saltiness + r.tasteProfile.saltiness,
-      acidity: acc.acidity + r.tasteProfile.acidity,
-      richness: acc.richness + r.tasteProfile.richness,
-    }), { spiciness: 0, sweetness: 0, saltiness: 0, acidity: 0, richness: 0 });
-
-    const avg = {
-      spiciness: (sums.spiciness / total).toFixed(1),
-      sweetness: (sums.sweetness / total).toFixed(1),
-      saltiness: (sums.saltiness / total).toFixed(1),
-      acidity: (sums.acidity / total).toFixed(1),
-      richness: (sums.richness / total).toFixed(1),
-    };
-
-    // Frequent Categories
-    const categories = records.map(r => r.category).filter(Boolean);
-    const topCategories = categories.slice(0, 5).join(', ');
-
-    const prompt = `
-      Based on the user's gourmet history, create a short, witty, and insightful "One-line Gastronomic Personality" (Taste MBTI).
-
-      **User Data:**
-      - Total Records: ${total}
-      - Favorite Categories: ${topCategories}
-      - Average Taste Profile (1-5): 
-        Spicy ${avg.spiciness}, Sweet ${avg.sweetness}, Salty ${avg.saltiness}, Acidic ${avg.acidity}, Rich ${avg.richness}
-
-      **Task:**
-      - Define the user's palate personality in **one Korean sentence**.
-      - Be fun, specific, and "hip".
-      - Examples:
-        - "매콤함과 묵직한 바디감을 즐기는 화끈한 미식가"
-        - "섬세한 산미와 가벼운 식감을 사랑하는 카페 투어리스트"
-        - "극강의 단짠단짠을 찾아 헤매는 자극 추구형"
-      
-      Output MUST be Korean text only. Max 40 characters.
-    `;
-
-    const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
-      contents: prompt,
-    });
-
-    return response.text?.trim() || "다양한 맛을 즐기는 미식 탐험가";
-  } catch (error) {
-    console.error("Taste Analysis Error:", error);
-    return "나만의 취향을 만들어가는 중...";
-  }
+  // Deprecated in favor of local MBTI calculation, keeping for fallback if needed
+  return "미식 데이터 분석 중...";
 };

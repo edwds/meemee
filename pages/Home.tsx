@@ -1,19 +1,15 @@
 
 import React, { useEffect, useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import { Utensils, Trophy, Settings, Sparkles, Plus, List, ChevronRight, Crown, ArrowLeft, Folder, Grid, Hash, Share2, MapPin } from 'lucide-react';
+import { Utensils, Trophy, Settings, Sparkles, Plus, List, ChevronRight, Crown, ArrowLeft, Folder, Grid, Hash, Share2, MapPin, TrendingUp } from 'lucide-react';
 import { Layout } from '../components/Layout';
 import { BottomTabBar } from '../components/BottomTabBar';
 import { ReviewRecord, Preference } from '../types';
-import { analyzeUserTaste } from '../services/geminiService';
-import { getEarnedBadges, calculateLevel } from '../utils/gamification';
+import { getEarnedBadges, calculateLevel, calculateGourmetMBTI } from '../utils/gamification';
 
 interface HomeProps {
   records: ReviewRecord[];
 }
-
-const CACHE_KEY_IDENTITY = 'meemee_taste_identity';
-const CACHE_KEY_COUNT = 'meemee_record_count_at_analysis';
 
 // Helper type for Collection
 interface RecordCollection {
@@ -26,43 +22,28 @@ interface RecordCollection {
 }
 
 export const Home: React.FC<HomeProps> = ({ records }) => {
-  const [tasteIdentity, setTasteIdentity] = useState<string>('나만의 미식 취향을 찾는 중...');
   const [viewMode, setViewMode] = useState<'timeline' | 'lists'>('timeline');
   const [selectedCollection, setSelectedCollection] = useState<RecordCollection | null>(null);
-
-  useEffect(() => {
-    const loadIdentity = async () => {
-      const cachedIdentity = localStorage.getItem(CACHE_KEY_IDENTITY);
-      const lastCount = localStorage.getItem(CACHE_KEY_COUNT);
-      const currentCount = records.length.toString();
-
-      if (cachedIdentity && lastCount === currentCount) {
-        setTasteIdentity(cachedIdentity);
-        return;
-      }
-
-      if (records.length > 0) {
-        if (!cachedIdentity) {
-             setTasteIdentity("미식 데이터 분석 중...");
-        }
-        
-        const identity = await analyzeUserTaste(records);
-        setTasteIdentity(identity);
-        
-        localStorage.setItem(CACHE_KEY_IDENTITY, identity);
-        localStorage.setItem(CACHE_KEY_COUNT, currentCount);
-      } else {
-        setTasteIdentity("첫 번째 미식을 기록해보세요!");
-      }
-    };
-
-    loadIdentity();
-  }, [records]);
 
   // Gamification Data
   const earnedBadges = useMemo(() => getEarnedBadges(records), [records]);
   const { level } = calculateLevel(records.length);
+  const mbti = useMemo(() => calculateGourmetMBTI(records), [records]);
   
+  // Calculate Top Keywords
+  const topKeywords = useMemo(() => {
+    const counts: Record<string, number> = {};
+    records.forEach(r => {
+        r.keywords.forEach(k => {
+            counts[k] = (counts[k] || 0) + 1;
+        });
+    });
+    return Object.entries(counts)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 5)
+        .map(([key]) => key);
+  }, [records]);
+
   // --- Auto-Generate Collections ---
   const collections = useMemo(() => {
     const list: RecordCollection[] = [];
@@ -148,63 +129,175 @@ export const Home: React.FC<HomeProps> = ({ records }) => {
       setSelectedCollection(null);
   };
 
+  const handleShareCollection = () => {
+      if (selectedCollection) {
+          if (navigator.share) {
+              navigator.share({
+                  title: `meemee - ${selectedCollection.title}`,
+                  text: `${selectedCollection.subtitle} 리스트를 공유합니다.`,
+                  url: window.location.href
+              }).catch(() => {});
+          } else {
+              alert("리스트 링크가 복사되었습니다!");
+          }
+      }
+  };
+
+  const renderTasteRow = (label: string, value: number, colorClass: string) => (
+    <div className="mb-3">
+        <div className="flex justify-between items-end mb-1">
+            <span className="text-[10px] font-bold text-gray-400">{label}</span>
+            <span className="text-[10px] font-bold text-secondary">{value.toFixed(1)}</span>
+        </div>
+        <div className="h-1.5 w-full bg-gray-100 rounded-full overflow-hidden">
+            <div 
+                className={`h-full rounded-full transition-all duration-1000 ${colorClass}`} 
+                style={{ width: `${(value / 5) * 100}%` }} 
+            />
+        </div>
+    </div>
+  );
+
   return (
-    <Layout title="meemee" hasTabBar={true}>
+    <Layout 
+      title="meemee" 
+      hasTabBar={true}
+      floatingAction={
+        !selectedCollection && (
+            <Link 
+                to="/create" 
+                className="absolute bottom-24 right-5 w-14 h-14 bg-secondary text-white rounded-full flex items-center justify-center shadow-lg shadow-gray-300 hover:scale-105 active:scale-95 transition-transform z-50 pointer-events-auto"
+                aria-label="기록하기"
+            >
+                <Plus size={28} strokeWidth={2.5} />
+            </Link>
+        )
+      }
+    >
       <div className="pb-4 relative min-h-full">
         
         {/* Profile Section (Only visible when not in drill-down view) */}
         {!selectedCollection && (
-            <Link to="/achievement" className="block active:opacity-90 transition-opacity">
-                <section className="bg-white pb-6 pt-6 rounded-b-[2rem] shadow-sm border-b border-gray-100 mb-6 relative">
-                    <div className="flex flex-col items-center">
-                        {/* Profile Image */}
-                        <div className="relative mb-3 group">
-                            <div className="w-24 h-24 rounded-full overflow-hidden border-4 border-white shadow-md relative z-10">
-                                <img 
-                                src="https://images.unsplash.com/photo-1563237023-b1e970526dcb?auto=format&fit=crop&w=400&q=80" 
-                                alt="Edwards" 
-                                className="w-full h-full object-cover"
-                                />
+            <Link to="/achievement" className="block active:scale-[0.99] transition-transform">
+                <section className="bg-white pb-6 pt-4 rounded-b-[2rem] shadow-sm border-b border-gray-100 mb-6 relative px-5">
+                    
+                    {/* Unified Gourmet ID Card */}
+                    <div className="w-full bg-gradient-to-br from-[#2E2E2E] to-[#1a1a1a] rounded-[1.5rem] p-5 text-white shadow-xl relative overflow-hidden mb-6">
+                        {/* Decor */}
+                        <div className="absolute top-0 right-0 w-32 h-32 bg-primary/20 rounded-full blur-3xl -translate-y-10 translate-x-10"></div>
+                        <div className="absolute bottom-0 left-0 w-20 h-20 bg-blue-500/10 rounded-full blur-2xl translate-y-5 -translate-x-5"></div>
+                        
+                        {/* Header: Profile Info */}
+                        <div className="flex items-center justify-between mb-5 relative z-10">
+                            <div className="flex items-center gap-3">
+                                <div className="w-12 h-12 rounded-full p-0.5 bg-gradient-to-tr from-primary to-gray-600 shadow-lg">
+                                    <img 
+                                    src="https://images.unsplash.com/photo-1563237023-b1e970526dcb?auto=format&fit=crop&w=400&q=80" 
+                                    alt="Edwards" 
+                                    className="w-full h-full object-cover rounded-full border border-gray-900"
+                                    />
+                                </div>
+                                <div>
+                                    <div className="flex items-center gap-1 mb-0.5">
+                                        <h2 className="text-base font-bold leading-none">edwards</h2>
+                                        <ChevronRight size={14} className="text-gray-400" />
+                                    </div>
+                                    <span className="text-[10px] bg-white/10 px-1.5 py-0.5 rounded font-bold border border-white/10 text-gray-300 inline-block">
+                                        Lv.{level} Gourmet Collector
+                                    </span>
+                                </div>
                             </div>
-                            <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 bg-secondary text-white text-[10px] font-bold px-2 py-0.5 rounded-full z-20 border border-white">
-                                Lv.{level}
-                            </div>
+                            
+                            {/* Settings Button (Inside Card) */}
+                            <button 
+                                onClick={(e) => {
+                                    e.preventDefault();
+                                    // Navigate to settings
+                                }}
+                                className="p-2 text-gray-400 hover:text-white transition-colors bg-white/5 rounded-full backdrop-blur-sm"
+                            >
+                                <Settings size={16} />
+                            </button>
                         </div>
 
-                        <div className="flex items-center justify-center gap-1 mt-1">
-                            <h2 className="text-xl font-bold text-secondary">edwards</h2>
-                            <ChevronRight size={18} className="text-gray-400" />
-                        </div>
-                        
-                        {/* Taste MBTI Badge */}
-                        <div className="mt-2 px-4 py-1 bg-orange-50 rounded-full border border-orange-100 flex items-center animate-fade-in">
-                            <Sparkles size={12} className="text-primary mr-1.5" />
-                            <p className="text-xs text-primary font-bold tracking-tight">{tasteIdentity}</p>
-                        </div>
-                        
-                        {/* Stats */}
-                        <div className="grid grid-cols-3 gap-4 mt-6 w-full px-8">
-                            <div className="text-center">
-                                <span className="block font-bold text-lg text-secondary">{records.length}</span>
-                                <span className="text-[10px] text-gray-400 uppercase tracking-wider">Records</span>
+                        {/* Content: MBTI */}
+                        {mbti ? (
+                            <div className="relative z-10">
+                                <div className="flex items-baseline gap-2 mb-1.5">
+                                    <h1 className="text-3xl font-black tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-white to-gray-300">
+                                        {mbti.code}
+                                    </h1>
+                                    <span className="text-xs font-bold text-primary bg-primary/10 px-2 py-0.5 rounded-full border border-primary/20">
+                                        {mbti.title}
+                                    </span>
+                                </div>
+                                <p className="text-[11px] text-gray-400 leading-relaxed mb-3 font-medium border-l-2 border-white/10 pl-3">
+                                    "{mbti.nuance}"
+                                </p>
+
+                                {/* Categories Tags */}
+                                {mbti.favoriteCategories.length > 0 && (
+                                    <div className="flex gap-1.5 mt-1">
+                                        {mbti.favoriteCategories.map(cat => (
+                                            <span key={cat} className="text-[9px] bg-black/30 px-2 py-1 rounded-lg border border-white/5 text-gray-300">
+                                                {cat}
+                                            </span>
+                                        ))}
+                                    </div>
+                                )}
                             </div>
-                            <div className="text-center border-l border-r border-gray-100">
-                                <span className="block font-bold text-lg text-secondary">
-                                {records.filter(r => r.preference === '좋아요').length}
-                                </span>
-                                <span className="text-[10px] text-gray-400 uppercase tracking-wider">Loved</span>
+                        ) : (
+                                <div className="py-4 text-center text-gray-500 text-xs">
+                                    기록을 남기고 미식 유형을 분석해보세요
+                                </div>
+                        )}
+                    </div>
+
+                    {/* Taste DNA Stats */}
+                    <div className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm mb-6">
+                        <div className="flex items-center gap-2 mb-4">
+                            <div className="p-1.5 bg-orange-50 rounded-lg text-primary">
+                                <TrendingUp size={16} />
                             </div>
-                            <div className="text-center">
-                                <span className="block font-bold text-lg text-secondary">
-                                {new Set(records.map(r => r.menu.split(',')[0].trim())).size}
-                                </span>
-                                <span className="text-[10px] text-gray-400 uppercase tracking-wider">Menus</span>
-                            </div>
+                            <h3 className="font-bold text-secondary text-sm">입맛 DNA</h3>
                         </div>
 
-                        {/* Earned Badges Row */}
-                        {earnedBadges.length > 0 && (
-                        <div className="mt-6 w-full overflow-x-auto no-scrollbar px-6 flex gap-2 pb-2">
+                        {mbti ? (
+                             <div className="grid grid-cols-2 gap-x-8 gap-y-1">
+                                {renderTasteRow('맵기 (Kick)', mbti.scores.spiciness, 'bg-red-400')}
+                                {renderTasteRow('단맛 (Main)', mbti.scores.sweetness, 'bg-pink-400')}
+                                {renderTasteRow('짠맛 (Main)', mbti.scores.saltiness, 'bg-blue-400')}
+                                {renderTasteRow('풍미 (Body)', mbti.scores.richness, 'bg-orange-400')}
+                            </div>
+                        ) : (
+                            <div className="text-center py-6 text-xs text-gray-400">
+                                데이터가 충분하지 않습니다.
+                            </div>
+                        )}
+
+                        {/* Top Keywords */}
+                        {topKeywords.length > 0 && (
+                            <div className="mt-4 pt-4 border-t border-gray-50">
+                                <div className="flex items-center gap-2 mb-3">
+                                    <Hash size={14} className="text-gray-400" />
+                                    <span className="text-xs font-bold text-gray-400">자주 쓰는 표현</span>
+                                </div>
+                                <div className="flex flex-wrap gap-2">
+                                    {topKeywords.map(k => (
+                                        <span key={k} className="px-2.5 py-1 bg-gray-100 text-gray-600 rounded-lg text-[10px] font-bold border border-gray-200">
+                                            #{k}
+                                        </span>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Earned Badges Row */}
+                    {earnedBadges.length > 0 && (
+                    <div>
+                        <h3 className="text-xs font-bold text-gray-400 mb-2 pl-1">획득한 뱃지</h3>
+                        <div className="w-full overflow-x-auto no-scrollbar flex gap-2 pb-2">
                             {earnedBadges.map(badge => (
                             <div key={badge.id} className={`flex-shrink-0 flex items-center px-3 py-1.5 rounded-lg border border-white shadow-sm ${badge.color}`}>
                                 <span className="mr-1.5">{badge.icon}</span>
@@ -212,20 +305,8 @@ export const Home: React.FC<HomeProps> = ({ records }) => {
                             </div>
                             ))}
                         </div>
-                        )}
                     </div>
-                    
-                    {/* Settings Icon */}
-                    <div className="absolute top-4 right-4">
-                        <button 
-                            onClick={(e) => {
-                                e.preventDefault();
-                            }}
-                            className="p-2 text-gray-300 hover:text-gray-500"
-                        >
-                            <Settings size={20} />
-                        </button>
-                    </div>
+                    )}
                 </section>
             </Link>
         )}
@@ -272,56 +353,92 @@ export const Home: React.FC<HomeProps> = ({ records }) => {
                             <p className="text-xs text-gray-500">{selectedCollection.subtitle}</p>
                         </div>
                     </div>
-                    <button className="p-2.5 bg-orange-50 text-primary rounded-full hover:bg-orange-100 active:scale-95 transition-all shadow-sm border border-orange-100">
+                    <button 
+                        onClick={handleShareCollection}
+                        className="p-2.5 bg-orange-50 text-primary rounded-full hover:bg-orange-100 active:scale-95 transition-all shadow-sm border border-orange-100"
+                    >
                         <Share2 size={18} />
                     </button>
                 </div>
 
-                {/* MOCK MAP VIEW */}
-                <div className="w-full aspect-[16/9] bg-[#f0f4f8] rounded-2xl mb-6 relative overflow-hidden border border-gray-200 shadow-inner">
+                {/* MAP VIEW (With Real Coordinates support) */}
+                <div className="w-full aspect-[16/9] bg-[#f0f4f8] rounded-2xl mb-6 relative overflow-hidden border border-gray-200 shadow-inner group">
                     {/* Grid pattern to simulate map */}
                     <div className="absolute inset-0 opacity-[0.15]" style={{ backgroundImage: 'radial-gradient(#94a3b8 1.5px, transparent 1.5px)', backgroundSize: '20px 20px' }}></div>
                     
                     {/* Map decorations */}
-                    <div className="absolute top-3 left-3 bg-white/90 backdrop-blur px-2 py-1 rounded text-[9px] text-gray-500 font-bold border border-gray-100 shadow-sm">
+                    <div className="absolute top-3 left-3 bg-white/90 backdrop-blur px-2 py-1 rounded text-[9px] text-gray-500 font-bold border border-gray-100 shadow-sm z-10">
                          MAP VIEW
                     </div>
 
-                    {/* Pins */}
-                    {selectedCollection.items.map((item) => {
-                         // Generate deterministic random position based on ID to keep pins static
-                         const pseudoRandom = (seed: string) => {
-                            let hash = 0;
-                            for (let i = 0; i < seed.length; i++) hash = seed.charCodeAt(i) + ((hash << 5) - hash);
-                            return (Math.abs(hash) % 70) + 15; // Keep within 15% - 85% to avoid edge clipping
-                         };
-                         const top = pseudoRandom(item.id + 'lat');
-                         const left = pseudoRandom(item.id + 'lng');
+                    {/* Pins Logic */}
+                    {(() => {
+                         // Calculate bounding box if locations exist
+                         const points = selectedCollection.items.filter(i => i.location?.lat && i.location?.lng);
+                         let minLat = 90, maxLat = -90, minLng = 180, maxLng = -180;
+                         
+                         if (points.length > 0) {
+                             points.forEach(p => {
+                                 if (p.location) {
+                                    minLat = Math.min(minLat, p.location.lat);
+                                    maxLat = Math.max(maxLat, p.location.lat);
+                                    minLng = Math.min(minLng, p.location.lng);
+                                    maxLng = Math.max(maxLng, p.location.lng);
+                                 }
+                             });
+                         }
 
-                         return (
-                             <Link 
-                                key={item.id} 
-                                to={`/record/${item.id}`}
-                                className="absolute transform -translate-x-1/2 -translate-y-full flex flex-col items-center group hover:z-50 transition-all" 
-                                style={{ top: `${top}%`, left: `${left}%` }}
-                             >
-                                {/* Tooltip */}
-                                <div className="bg-secondary text-white text-[10px] font-bold px-2 py-1 rounded-lg mb-1 opacity-0 group-hover:opacity-100 group-hover:-translate-y-1 transition-all whitespace-nowrap shadow-lg relative">
-                                    {item.title}
-                                    <div className="absolute bottom-[-4px] left-1/2 -translate-x-1/2 border-l-4 border-r-4 border-t-4 border-transparent border-t-secondary"></div>
-                                </div>
-                                
-                                {/* Pin */}
-                                <div className="relative">
-                                    <MapPin className="text-primary drop-shadow-md transition-transform group-hover:scale-110 group-active:scale-95" size={28} fill="#fff" strokeWidth={2.5} />
-                                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-2 h-2 bg-secondary rounded-full"></div>
-                                </div>
-                                
-                                {/* Shadow */}
-                                <div className="w-4 h-1.5 bg-black/20 rounded-full blur-[2px] mt-[-4px]"></div>
-                             </Link>
-                         )
-                    })}
+                         // Padding factor
+                         const latPadding = (maxLat - minLat) * 0.2 || 0.002;
+                         const lngPadding = (maxLng - minLng) * 0.2 || 0.002;
+
+                         return selectedCollection.items.map((item) => {
+                             let top, left;
+
+                             if (item.location && points.length > 0) {
+                                 // Map lat/lng to % position relative to bounding box
+                                 const latRange = (maxLat + latPadding) - (minLat - latPadding);
+                                 const lngRange = (maxLng + lngPadding) - (minLng - lngPadding);
+                                 
+                                 // Latitude is inverted (Top is +)
+                                 top = 100 - ((item.location.lat - (minLat - latPadding)) / latRange * 100);
+                                 left = (item.location.lng - (minLng - lngPadding)) / lngRange * 100;
+                             } else {
+                                 // Fallback to Deterministic Random
+                                 const pseudoRandom = (seed: string) => {
+                                    let hash = 0;
+                                    for (let i = 0; i < seed.length; i++) hash = seed.charCodeAt(i) + ((hash << 5) - hash);
+                                    return (Math.abs(hash) % 70) + 15; 
+                                 };
+                                 top = pseudoRandom(item.id + 'lat');
+                                 left = pseudoRandom(item.id + 'lng');
+                             }
+
+                             return (
+                                 <Link 
+                                    key={item.id} 
+                                    to={`/record/${item.id}`}
+                                    className="absolute transform -translate-x-1/2 -translate-y-full flex flex-col items-center transition-all hover:z-50" 
+                                    style={{ top: `${top}%`, left: `${left}%` }}
+                                 >
+                                    {/* Tooltip */}
+                                    <div className="bg-secondary text-white text-[10px] font-bold px-2 py-1 rounded-lg mb-1 opacity-0 group-hover:opacity-100 transition-all whitespace-nowrap shadow-lg relative pointer-events-none">
+                                        {item.title}
+                                        <div className="absolute bottom-[-4px] left-1/2 -translate-x-1/2 border-l-4 border-r-4 border-t-4 border-transparent border-t-secondary"></div>
+                                    </div>
+                                    
+                                    {/* Pin */}
+                                    <div className="relative hover:scale-110 transition-transform">
+                                        <MapPin className="text-primary drop-shadow-md" size={28} fill="#fff" strokeWidth={2.5} />
+                                        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-2 h-2 bg-secondary rounded-full"></div>
+                                    </div>
+                                    
+                                    {/* Shadow */}
+                                    <div className="w-4 h-1.5 bg-black/20 rounded-full blur-[2px] mt-[-4px]"></div>
+                                 </Link>
+                             )
+                        });
+                    })()}
                 </div>
 
                 {selectedCollection.type === 'ranking' ? (
@@ -384,65 +501,75 @@ export const Home: React.FC<HomeProps> = ({ records }) => {
                 )}
             </div>
           ) : viewMode === 'timeline' ? (
-            // --- TIMELINE VIEW ---
+            // --- TIMELINE VIEW (Premium Gourmet Log Card Style) ---
             records.length === 0 ? (
                 <div className="text-center py-20 text-gray-400 bg-white rounded-3xl border border-dashed border-gray-200 mx-2">
                     <Utensils className="mx-auto mb-3 opacity-40" size={32} />
                     <p className="text-sm font-medium">아직 기록된 미식이 없습니다.<br/>첫 번째 맛을 기록해보세요!</p>
                 </div>
             ) : (
-                <div className="grid gap-4">
+                <div className="space-y-6">
                 {records.map((record) => (
                     <Link key={record.id} to={`/record/${record.id}`} className="block group active:scale-[0.99] transition-transform">
-                    <article className="bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-100 flex h-32 relative">
-                        {/* Rank Badge */}
-                        {record.rank && (
-                        <div className="absolute top-0 left-0 bg-yellow-400 text-white text-[10px] font-bold px-2 py-0.5 rounded-br-lg z-10 flex items-center shadow-sm">
-                            <Trophy size={8} className="mr-1" />
-                            #{record.rank}
-                        </div>
-                        )}
-
-                        {/* Image */}
-                        <div className="w-32 h-32 flex-shrink-0 bg-gray-100">
-                        {record.representativePhoto ? (
+                    <article className="bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-100">
+                        {/* Card Header: Full width Image */}
+                        <div className="h-48 relative">
                             <img 
                             src={record.representativePhoto} 
                             alt={record.title} 
                             className="w-full h-full object-cover"
                             />
-                        ) : (
-                            <div className="w-full h-full flex items-center justify-center text-gray-400 text-xs">
-                            No Img
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
+                            
+                            {/* Overlay Content */}
+                            <div className="absolute bottom-0 left-0 w-full p-4 text-white">
+                                <div className="flex items-center gap-2 text-[10px] opacity-90 mb-1">
+                                    {record.category && (
+                                        <span className="bg-white/20 backdrop-blur-md px-2 py-0.5 rounded border border-white/10">{record.category}</span>
+                                    )}
+                                    <span className="flex items-center"><MapPin size={10} className="mr-1"/> {record.location?.address || record.title}</span>
+                                </div>
+                                <h4 className="font-bold text-xl leading-none shadow-sm">{record.title}</h4>
                             </div>
-                        )}
-                        </div>
-                        
-                        {/* Content */}
-                        <div className="p-4 flex flex-col justify-between flex-1 min-w-0">
-                        <div>
-                            <div className="flex justify-between items-start mb-1">
-                                <h4 className="font-bold text-secondary truncate pr-2 text-base">{record.title}</h4>
-                            </div>
-                            <p className="text-xs text-gray-500 truncate mb-1">{record.menu}</p>
-                            <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium inline-block ${
-                                record.preference === '좋아요' ? 'bg-orange-50 text-primary' : 
-                                record.preference === '보통' ? 'bg-gray-100 text-gray-600' : 'bg-gray-50 text-gray-400'
+
+                            {/* Preference Badge */}
+                            <span className={`absolute top-3 right-3 text-[10px] px-2 py-1 rounded-full font-bold shadow-sm backdrop-blur-md ${
+                                record.preference === Preference.GOOD ? 'bg-white/90 text-primary' : 
+                                record.preference === Preference.NORMAL ? 'bg-gray-900/50 text-white' : 'bg-gray-900/50 text-gray-300'
                             }`}>
                                 {record.preference}
                             </span>
+
+                            {/* Rank Badge */}
+                            {record.rank && (
+                                <div className="absolute top-3 left-3 bg-yellow-400 text-white text-[10px] font-bold px-2 py-1 rounded-full shadow-sm flex items-center border border-yellow-300">
+                                    <Trophy size={10} className="mr-1" />
+                                    #{record.rank}
+                                </div>
+                            )}
                         </div>
                         
-                        <div className="flex items-center justify-between">
-                            <div className="flex gap-1 overflow-hidden">
-                            {record.keywords?.slice(0, 2).map(k => (
-                                    <span key={k} className="text-[9px] bg-gray-50 text-gray-500 px-1.5 py-0.5 rounded border border-gray-100 truncate max-w-[60px]">#{k}</span>
-                                ))}
+                        {/* Card Body */}
+                        <div className="p-4">
+                            {/* Tasting Note */}
+                            <div className="flex items-start gap-3 mb-4">
+                                <Sparkles size={16} className="text-primary flex-shrink-0 mt-0.5" />
+                                <p className="text-sm text-gray-600 font-serif leading-relaxed italic line-clamp-2">
+                                    "{record.aiGeneratedText}"
+                                </p>
                             </div>
-                            <span className="text-[10px] text-gray-300 flex-shrink-0 ml-2">
-                            {formatDate(record.visitDate, record.createdAt)}
-                            </span>
-                        </div>
+                            
+                            <div className="flex items-center justify-between border-t border-gray-50 pt-3">
+                                <div className="flex items-center gap-2">
+                                    <span className="text-xs font-medium text-gray-500">{record.menu}</span>
+                                    {record.keywords && record.keywords.length > 0 && (
+                                        <span className="text-[10px] bg-gray-50 text-gray-400 px-1.5 py-0.5 rounded border border-gray-100">#{record.keywords[0]}</span>
+                                    )}
+                                </div>
+                                <span className="text-[10px] text-gray-300">
+                                {formatDate(record.visitDate, record.createdAt)}
+                                </span>
+                            </div>
                         </div>
                     </article>
                     </Link>
@@ -495,18 +622,7 @@ export const Home: React.FC<HomeProps> = ({ records }) => {
             )
           )}
         </section>
-
-        {/* Floating Action Button for Create Record (Hide in drill-down) */}
-        {!selectedCollection && (
-            <Link 
-                to="/create" 
-                className="fixed bottom-24 right-5 w-14 h-14 bg-secondary text-white rounded-full flex items-center justify-center shadow-lg shadow-gray-300 hover:scale-105 active:scale-95 transition-transform z-50"
-                aria-label="기록하기"
-            >
-                <Plus size={28} strokeWidth={2.5} />
-            </Link>
-        )}
-
+        
         <BottomTabBar activeTab="home" />
       </div>
     </Layout>

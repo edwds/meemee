@@ -239,22 +239,32 @@ export const RestaurantDetail: React.FC<RestaurantDetailProps> = ({ userRecords 
                         </h3>
                     </div>
 
-                    <div className="space-y-3">
+                    <div className="space-y-5">
                         {myReviews.map(review => (
-                            <Link key={review.id} to={`/record/${review.id}`}>
-                                <div className="bg-orange-50 border border-orange-100 rounded-2xl p-4 active:scale-[0.99] transition-transform relative overflow-hidden">
-                                    <div className="absolute top-0 right-0 p-3 opacity-10">
-                                        <Sparkles size={48} className="text-primary" />
-                                    </div>
-                                    <div className="flex items-center justify-between mb-2 relative z-10">
-                                        <span className="text-xs font-bold text-primary bg-white/80 px-2 py-0.5 rounded-full border border-orange-100 shadow-sm">
-                                            {review.visitDate}
+                            <Link key={review.id} to={`/record/${review.id}`} className="block group active:scale-[0.99] transition-transform">
+                                <div className="bg-white rounded-2xl overflow-hidden shadow-sm border border-orange-200 ring-2 ring-orange-50">
+                                    {/* Header */}
+                                    <div className="h-40 relative">
+                                        <img src={review.representativePhoto} alt={review.title} className="w-full h-full object-cover" />
+                                        <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent"></div>
+                                        <div className="absolute bottom-3 left-4 text-white">
+                                            <span className="text-[10px] bg-white/20 backdrop-blur px-2 py-0.5 rounded font-bold mb-1 inline-block">
+                                                {review.visitDate}
+                                            </span>
+                                            <h4 className="font-bold text-lg">{review.menu}</h4>
+                                        </div>
+                                        <span className="absolute top-3 right-3 bg-white/90 text-primary text-[10px] font-bold px-2 py-1 rounded-full shadow-sm">
+                                            {review.preference}
                                         </span>
-                                        <span className="text-xs font-medium text-orange-500">{review.preference}</span>
                                     </div>
-                                    <p className="text-sm text-gray-700 line-clamp-2 font-medium relative z-10 leading-relaxed">
-                                        "{review.aiGeneratedText}"
-                                    </p>
+                                    <div className="p-4">
+                                        <div className="flex items-start gap-3">
+                                            <Sparkles size={16} className="text-primary flex-shrink-0 mt-0.5" />
+                                            <p className="text-sm text-gray-700 font-serif leading-relaxed italic">
+                                                "{review.aiGeneratedText}"
+                                            </p>
+                                        </div>
+                                    </div>
                                 </div>
                             </Link>
                         ))}
@@ -269,37 +279,49 @@ export const RestaurantDetail: React.FC<RestaurantDetailProps> = ({ userRecords 
                     Community Logs
                 </h3>
                 
-                <div className="space-y-5">
+                <div className="space-y-6">
                     {communityRecords.map((record) => (
-                        <div key={record.id} className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-                            {/* Header */}
-                            <div className="px-4 py-3 flex items-center justify-between border-b border-gray-50">
-                                <div className="flex items-center gap-2">
-                                    <div className="w-8 h-8 rounded-full bg-gray-100 overflow-hidden">
-                                        <img src={record.avatar} alt="" className="w-full h-full object-cover" />
-                                    </div>
-                                    <div>
-                                        <span className="text-xs font-bold text-secondary block">{record.author}</span>
-                                        <span className="text-[10px] text-gray-400">{record.date}</span>
-                                    </div>
+                        <div key={record.id} className="bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-100 group active:scale-[0.99] transition-transform">
+                            {/* Card Header */}
+                            <div className="h-48 relative">
+                                <img src={record.photo} className="w-full h-full object-cover" alt="" />
+                                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent"></div>
+                                
+                                {/* Author Overlay */}
+                                <div className="absolute top-4 left-4 flex items-center gap-2 z-10">
+                                     <div className="w-8 h-8 rounded-full border border-white/30 p-0.5 bg-white/10 backdrop-blur-sm">
+                                         <img src={record.avatar} className="w-full h-full rounded-full object-cover" alt={record.author} />
+                                     </div>
+                                     <div>
+                                         <p className="text-white text-xs font-bold shadow-sm leading-none mb-0.5">{record.author}</p>
+                                         <p className="text-white/70 text-[9px] font-medium">{record.date}</p>
+                                     </div>
                                 </div>
-                                <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
-                                    record.preference === Preference.GOOD ? 'bg-orange-50 text-primary' : 
-                                    record.preference === Preference.NORMAL ? 'bg-gray-100 text-gray-600' : 'bg-gray-50 text-gray-400'
+
+                                {/* Preference Badge */}
+                                <span className={`absolute top-4 right-4 px-2 py-1 rounded-full text-[10px] font-bold backdrop-blur-md ${
+                                    record.preference === Preference.GOOD ? 'bg-white/90 text-primary' : 
+                                    record.preference === Preference.NORMAL ? 'bg-gray-900/50 text-white' : 'bg-gray-900/50 text-gray-300'
                                 }`}>
                                     {record.preference}
                                 </span>
+
+                                {/* Footer Overlay */}
+                                <div className="absolute bottom-0 left-0 w-full p-4 text-white">
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-1.5">
+                                            <Sparkles size={14} className="text-primary" />
+                                            <span className="text-xs font-bold">Tasting Note</span>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
 
                             <div className="p-4">
+                                {/* Content */}
                                 <div className="flex gap-4 mb-4">
-                                     {/* Mini Photo */}
-                                     <div className="w-20 h-20 rounded-xl bg-gray-100 overflow-hidden flex-shrink-0">
-                                        <img src={record.photo} className="w-full h-full object-cover" alt="" />
-                                     </div>
-
-                                     {/* Taste DNA */}
-                                     <div className="flex-1 bg-gray-50 rounded-xl p-2 px-4 flex items-center justify-between gap-2">
+                                     {/* Taste DNA Mini */}
+                                     <div className="flex-1 bg-gray-50 rounded-xl p-3 px-2 flex items-center justify-between gap-1 border border-gray-100">
                                         {renderTasteMiniBar('매운', record.tasteProfile.spiciness)}
                                         {renderTasteMiniBar('단맛', record.tasteProfile.sweetness)}
                                         {renderTasteMiniBar('짠맛', record.tasteProfile.saltiness)}
@@ -308,13 +330,13 @@ export const RestaurantDetail: React.FC<RestaurantDetailProps> = ({ userRecords 
                                      </div>
                                 </div>
 
-                                <p className="text-sm text-gray-700 font-serif leading-relaxed mb-3">
+                                <p className="text-sm text-gray-700 font-serif leading-relaxed mb-4 pl-2 border-l-2 border-primary/20 italic">
                                     "{record.aiText}"
                                 </p>
 
                                 <div className="flex flex-wrap gap-1.5">
                                     {record.keywords.map(k => (
-                                        <span key={k} className="text-[10px] border border-gray-200 text-gray-500 px-2 py-0.5 rounded-lg">
+                                        <span key={k} className="text-[10px] bg-white border border-gray-200 text-gray-500 px-2 py-0.5 rounded-lg">
                                             #{k}
                                         </span>
                                     ))}

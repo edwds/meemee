@@ -1,11 +1,12 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Camera, X, Wand2, Users, Calendar, Sparkles, Trophy, Swords, ChefHat, ChevronRight, Tag, Utensils, Loader2, LayoutGrid } from 'lucide-react';
+import { Camera, X, Wand2, Users, Calendar, Sparkles, Trophy, Swords, ChefHat, ChevronRight, Tag, Utensils, Loader2, LayoutGrid, MapPin } from 'lucide-react';
 import { Layout } from '../components/Layout';
 import { Button } from '../components/Button';
 import { Preference, ReviewStyle, KEYWORD_DATA, KeywordCategory, TasteProfile, ReviewRecord } from '../types';
 import { generateReviewText, analyzeImageContext } from '../services/geminiService';
+import { calculateGourmetMBTI } from '../utils/gamification';
 // Import EXIF carefully to handle ESM environment differences
 import * as EXIF from 'exif-js';
 
@@ -33,6 +34,11 @@ interface RankingState {
   sortedExisting: ReviewRecord[];
 }
 
+interface LocationInfo {
+  lat: number;
+  lng: number;
+}
+
 export const CreateRecord: React.FC<CreateRecordProps> = ({ onSave, existingRecords = [] }) => {
   const navigate = useNavigate();
   const [step, setStep] = useState(STEPS.PHOTOS);
@@ -44,11 +50,13 @@ export const CreateRecord: React.FC<CreateRecordProps> = ({ onSave, existingReco
   // Form State
   const [title, setTitle] = useState('');
   const [category, setCategory] = useState('');
+  const [area, setArea] = useState('');
   const [visitDate, setVisitDate] = useState('');
   const [companions, setCompanions] = useState('');
   const [photos, setPhotos] = useState<string[]>([]);
   const [preference, setPreference] = useState<Preference | null>(null);
   const [menu, setMenu] = useState('');
+  const [location, setLocation] = useState<LocationInfo | null>(null);
   
   // Taste Profile State
   const [tasteProfile, setTasteProfile] = useState<TasteProfile>({
@@ -102,30 +110,49 @@ export const CreateRecord: React.FC<CreateRecordProps> = ({ onSave, existingReco
     }
   }, [step]);
 
-  // Helper to get EXIF Date
-  const getExifDate = (file: File): Promise<string | null> => {
+  // Helper to convert DMS to Decimal
+  const toDecimal = (number: number[], ref: string) => {
+      if (!number || number.length < 3) return 0;
+      let decimal = number[0] + number[1] / 60 + number[2] / 3600;
+      return (ref === "S" || ref === "W") ? decimal * -1 : decimal;
+  };
+
+  // Helper to get EXIF Date & GPS
+  const getExifData = (file: File): Promise<{ date: string | null, location: LocationInfo | null }> => {
     return new Promise((resolve) => {
       if (!EXIF_LIB || !EXIF_LIB.getData) {
-        console.warn("EXIF library not loaded properly");
-        resolve(null);
+        resolve({ date: null, location: null });
         return;
       }
       
       try {
         EXIF_LIB.getData(file as any, function(this: any) {
+          const result: { date: string | null, location: LocationInfo | null } = { date: null, location: null };
+
+          // Date
           const dateString = EXIF_LIB.getTag(this, "DateTimeOriginal");
           if (dateString) {
-            // Format: "YYYY:MM:DD HH:MM:SS" -> "YYYY-MM-DD"
             const [datePart] = dateString.split(' ');
-            const formattedDate = datePart.replace(/:/g, '-');
-            resolve(formattedDate);
-          } else {
-            resolve(null);
+            result.date = datePart.replace(/:/g, '-');
           }
+
+          // GPS
+          const lat = EXIF_LIB.getTag(this, "GPSLatitude");
+          const latRef = EXIF_LIB.getTag(this, "GPSLatitudeRef");
+          const lng = EXIF_LIB.getTag(this, "GPSLongitude");
+          const lngRef = EXIF_LIB.getTag(this, "GPSLongitudeRef");
+
+          if (lat && lng && latRef && lngRef) {
+              result.location = {
+                  lat: toDecimal(lat, latRef),
+                  lng: toDecimal(lng, lngRef)
+              };
+          }
+          resolve(result);
         });
       } catch (e) {
         console.error("EXIF extraction error", e);
-        resolve(null);
+        resolve({ date: null, location: null });
       }
     });
   };
@@ -172,6 +199,7 @@ export const CreateRecord: React.FC<CreateRecordProps> = ({ onSave, existingReco
       const files = Array.from(e.target.files) as File[];
       const newPhotos: string[] = [];
       const dates: string[] = [];
+      const locs: LocationInfo[] = [];
 
       try {
         for (const file of files) {
@@ -179,19 +207,22 @@ export const CreateRecord: React.FC<CreateRecordProps> = ({ onSave, existingReco
           const resized = await resizeImage(file);
           newPhotos.push(resized);
 
-          // Extract Date
-          const exifDate = await getExifDate(file);
-          if (exifDate) dates.push(exifDate);
+          // Extract Metadata
+          const exif = await getExifData(file);
+          if (exif.date) dates.push(exif.date);
+          if (exif.location) locs.push(exif.location);
         }
 
         setPhotos(prev => [...prev, ...newPhotos].slice(0, 10));
 
         // Determine Visit Date
         if (dates.length > 0) {
-            const allSame = dates.every(d => d === dates[0]);
-            if (allSame) {
-                setVisitDate(dates[0]);
-            }
+            setVisitDate(dates[0]);
+        }
+
+        // Determine Location (Use first valid location found)
+        if (locs.length > 0 && !location) {
+            setLocation(locs[0]);
         }
 
       } catch (error) {
@@ -215,6 +246,7 @@ export const CreateRecord: React.FC<CreateRecordProps> = ({ onSave, existingReco
       if (result.placeName) setTitle(result.placeName);
       if (result.category) setCategory(result.category);
       if (result.menu) setMenu(result.menu);
+      if (result.area) setArea(result.area);
       if (result.keywords) {
         setRecommendedTags(result.keywords);
       }
@@ -313,6 +345,17 @@ export const CreateRecord: React.FC<CreateRecordProps> = ({ onSave, existingReco
 
     const recordId = Date.now().toString();
     
+    // Use extracted location or fallback to a "Mock" Seoul location near City Hall with random offset
+    const finalLocation = location ? {
+        lat: location.lat,
+        lng: location.lng,
+        address: area || 'Unknown Location'
+    } : {
+        lat: 37.5665 + (Math.random() * 0.02 - 0.01),
+        lng: 126.9780 + (Math.random() * 0.02 - 0.01),
+        address: area || '서울'
+    };
+    
     const newRecord: ReviewRecord = {
       id: recordId,
       title,
@@ -327,7 +370,8 @@ export const CreateRecord: React.FC<CreateRecordProps> = ({ onSave, existingReco
       keywords: selectedKeywords,
       aiGeneratedText: aiText,
       createdAt: Date.now(),
-      rank
+      rank,
+      location: finalLocation
     };
     
     onSave(newRecord, updatedRecords);
@@ -411,18 +455,33 @@ export const CreateRecord: React.FC<CreateRecordProps> = ({ onSave, existingReco
                     </div>
                 </div>
 
-                {/* Category Input */}
-                <div className="space-y-1">
-                    <label className="text-xs font-bold text-gray-500 uppercase tracking-wider ml-1">카테고리</label>
-                    <div className="relative">
-                        <input 
-                            type="text" 
-                            value={category} 
-                            onChange={(e) => setCategory(e.target.value)}
-                            placeholder="예: 한식, 일식, 카페"
-                            className="w-full p-4 bg-white border border-gray-200 rounded-2xl text-base font-medium focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all text-gray-900 placeholder-gray-300"
-                        />
-                        <LayoutGrid className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-300" size={20} />
+                <div className="grid grid-cols-2 gap-4">
+                    {/* Category Input */}
+                    <div className="space-y-1">
+                        <label className="text-xs font-bold text-gray-500 uppercase tracking-wider ml-1">카테고리</label>
+                        <div className="relative">
+                            <input 
+                                type="text" 
+                                value={category} 
+                                onChange={(e) => setCategory(e.target.value)}
+                                placeholder="예: 한식"
+                                className="w-full p-3.5 bg-white border border-gray-200 rounded-2xl text-base font-medium focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all text-gray-900 placeholder-gray-300"
+                            />
+                        </div>
+                    </div>
+
+                    {/* Area Input */}
+                     <div className="space-y-1">
+                        <label className="text-xs font-bold text-gray-500 uppercase tracking-wider ml-1">지역</label>
+                        <div className="relative">
+                            <input 
+                                type="text" 
+                                value={area} 
+                                onChange={(e) => setArea(e.target.value)}
+                                placeholder="예: 성수동"
+                                className="w-full p-3.5 bg-white border border-gray-200 rounded-2xl text-base font-medium focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all text-gray-900 placeholder-gray-300"
+                            />
+                        </div>
                     </div>
                 </div>
 
@@ -632,52 +691,54 @@ export const CreateRecord: React.FC<CreateRecordProps> = ({ onSave, existingReco
     </div>
   );
 
-  const renderReviewStep = () => (
-    <div className="h-full relative flex flex-col">
-      <div className="flex-1 overflow-y-auto p-6 no-scrollbar pb-32">
-        <div className="text-center mb-6 mt-4">
-          <h2 className="text-2xl font-bold text-secondary mb-2">미식 리포트 도착!</h2>
-          <p className="text-base text-gray-500">AI가 당신의 미식을 분석했습니다</p>
-        </div>
-
-        <div className="bg-white rounded-2xl shadow-lg p-6 border border-gray-100 min-h-[300px] mb-6">
-          {isLoading ? (
-            <div className="h-full flex flex-col items-center justify-center space-y-4 py-12">
-              <Sparkles className="text-primary animate-bounce" size={32} />
-              <p className="text-gray-400 text-sm animate-pulse">미식 뉘앙스를 분석하는 중...</p>
+  const renderReviewStep = () => {
+      return (
+        <div className="h-full relative flex flex-col">
+        <div className="flex-1 overflow-y-auto p-6 no-scrollbar pb-32">
+            <div className="text-center mb-6 mt-4">
+            <h2 className="text-2xl font-bold text-secondary mb-2">미식 리포트 도착!</h2>
+            <p className="text-base text-gray-500">AI가 당신의 미식을 분석했습니다</p>
             </div>
-          ) : (
-            <>
-              <div className="flex justify-between items-center mb-6 border-b border-gray-100 pb-4">
-                 <span className="text-sm font-bold text-gray-400">TASTING NOTE</span>
-                 <span className="text-xs bg-secondary text-white px-2 py-1 rounded">{reviewStyle}</span>
-              </div>
-              <textarea
-                className="w-full h-64 p-0 text-base text-gray-700 leading-relaxed resize-none focus:outline-none bg-transparent"
-                value={aiText}
-                onChange={(e) => setAiText(e.target.value)}
-              />
-              <div className="flex justify-end mt-4">
-                  <button 
-                      onClick={handleGenerateAI}
-                      className="text-xs text-primary flex items-center hover:underline p-2"
-                  >
-                      <Wand2 size={12} className="mr-1" />
-                      다시 쓰기
-                  </button>
-              </div>
-            </>
-          )}
-        </div>
-      </div>
 
-      <div className="absolute bottom-0 left-0 w-full p-4 pb-10 bg-white border-t border-gray-100 z-50 shadow-[0_-4px_20px_rgba(0,0,0,0.05)]">
-        <Button fullWidth size="lg" onClick={handleNextAfterReview} disabled={isLoading}>
-          {preference === Preference.GOOD ? '랭킹 정하기' : '저장하기'}
-        </Button>
-      </div>
-    </div>
-  );
+            <div className="bg-white rounded-2xl shadow-lg p-6 border border-gray-100 min-h-[300px] mb-6">
+            {isLoading ? (
+                <div className="h-full flex flex-col items-center justify-center space-y-4 py-12">
+                <Sparkles className="text-primary animate-bounce" size={32} />
+                <p className="text-gray-400 text-sm animate-pulse">미식 뉘앙스를 분석하는 중...</p>
+                </div>
+            ) : (
+                <>
+                <div className="flex justify-between items-center mb-6 border-b border-gray-100 pb-4">
+                    <span className="text-sm font-bold text-gray-400">TASTING NOTE</span>
+                    <span className="text-xs bg-secondary text-white px-2 py-1 rounded">{reviewStyle}</span>
+                </div>
+                <textarea
+                    className="w-full h-64 p-0 text-base text-gray-700 leading-relaxed resize-none focus:outline-none bg-transparent"
+                    value={aiText}
+                    onChange={(e) => setAiText(e.target.value)}
+                />
+                <div className="flex justify-end mt-4">
+                    <button 
+                        onClick={handleGenerateAI}
+                        className="text-xs text-primary flex items-center hover:underline p-2"
+                    >
+                        <Wand2 size={12} className="mr-1" />
+                        다시 쓰기
+                    </button>
+                </div>
+                </>
+            )}
+            </div>
+        </div>
+
+        <div className="absolute bottom-0 left-0 w-full p-4 pb-10 bg-white border-t border-gray-100 z-50 shadow-[0_-4px_20px_rgba(0,0,0,0.05)]">
+            <Button fullWidth size="lg" onClick={handleNextAfterReview} disabled={isLoading}>
+            {preference === Preference.GOOD ? '랭킹 정하기' : '저장하기'}
+            </Button>
+        </div>
+        </div>
+    );
+  };
 
   const renderRankingStep = () => {
     const { status, sortedExisting, mid } = rankingState;

@@ -8,6 +8,7 @@ interface LayoutProps {
   showBack?: boolean;
   hasTabBar?: boolean;
   scrollable?: boolean;
+  floatingAction?: React.ReactNode;
 }
 
 export const Layout: React.FC<LayoutProps> = ({ 
@@ -15,7 +16,8 @@ export const Layout: React.FC<LayoutProps> = ({
   title, 
   showBack = false,
   hasTabBar = false,
-  scrollable = true
+  scrollable = true,
+  floatingAction
 }) => {
   const navigate = useNavigate();
 
@@ -46,6 +48,13 @@ export const Layout: React.FC<LayoutProps> = ({
         <main className={`flex-1 flex flex-col min-h-0 relative ${scrollable ? 'overflow-y-auto overflow-x-hidden' : 'overflow-hidden'} ${hasTabBar && scrollable ? 'pb-[100px]' : ''}`}>
           {children}
         </main>
+
+        {/* Floating Action Button Container (Absolute relative to the max-w-md frame) */}
+        {floatingAction && (
+          <div className="z-50 pointer-events-none">
+            {floatingAction}
+          </div>
+        )}
       </div>
     </div>
   );
