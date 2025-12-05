@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { Trophy, Settings, Plus, ChevronRight, Share2, MapPin, Utensils, LayoutGrid, AlignJustify, Hash, Grid, List } from 'lucide-react';
@@ -81,82 +82,92 @@ export const Home: React.FC<HomeProps> = ({ records }) => {
         !selectedCollection && (
             <Link 
                 to="/create" 
-                className="absolute bottom-24 right-5 w-14 h-14 bg-white text-black rounded-full flex items-center justify-center shadow-lg shadow-gray-900/50 hover:scale-105 active:scale-95 transition-transform z-50 pointer-events-auto"
+                className="absolute bottom-32 right-5 w-14 h-14 bg-white text-black rounded-full flex items-center justify-center shadow-lg shadow-gray-900/50 hover:scale-105 active:scale-95 transition-transform z-50 pointer-events-auto"
             >
                 <Plus size={28} strokeWidth={2.5} />
             </Link>
         )
       }
     >
-      <div className="relative min-h-full pb-24 bg-black text-white">
+      <div className="relative min-h-full pb-32 bg-black text-white">
         
-        {/* Full Dark Profile Header - Immersive & Magazine Style */}
+        {/* Floating Premium Profile Card */}
         {!selectedCollection && (
-            <div className="pt-12 pb-8 px-6 bg-[#1A1A1A] rounded-b-[3rem] shadow-2xl mb-6 relative z-10">
-                <div className="flex justify-between items-start mb-6">
-                    <Link to="/achievement" className="group">
-                        <div className="relative inline-block mb-4">
-                            <div className="w-24 h-24 rounded-full p-1 bg-gradient-to-tr from-primary to-gray-800 group-active:scale-95 transition-transform shadow-xl">
-                                <img 
-                                src="https://images.unsplash.com/photo-1563237023-b1e970526dcb?auto=format&fit=crop&w=400&q=80" 
-                                alt="Edwards" 
-                                className="w-full h-full object-cover rounded-full border-4 border-[#1A1A1A]"
-                                />
-                            </div>
-                            <div className="absolute bottom-0 right-0 bg-white text-black text-xs font-black px-2.5 py-1 rounded-xl border-4 border-[#1A1A1A] shadow-lg">
-                                Lv.{level}
-                            </div>
-                        </div>
-                        <div>
-                            <h2 className="text-4xl font-black leading-none tracking-tight mb-3 group-active:text-gray-300 transition-colors">edwards</h2>
-                            {mbti ? (
-                                <div className="flex flex-col items-start gap-2">
-                                    <div className="flex items-center gap-3">
-                                        <span className="text-primary font-black text-3xl leading-none">{mbti.code}</span>
-                                        <span className="text-xs text-gray-400 font-bold uppercase tracking-widest border border-white/10 px-2 py-1 rounded-md">{mbti.title}</span>
-                                    </div>
-                                    <p className="text-sm text-gray-500 font-medium max-w-[280px] leading-relaxed">{mbti.nuance}</p>
+            <div className="mx-4 mt-6 mb-8 bg-[#1A1A1A] rounded-[2.5rem] p-6 shadow-2xl border border-white/5 relative overflow-hidden z-10">
+                {/* Background Deco */}
+                <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full blur-3xl -translate-y-10 translate-x-10"></div>
+
+                <div className="relative z-10">
+                    <div className="flex justify-between items-start mb-6">
+                        <Link to="/achievement" className="group flex items-center gap-4">
+                            <div className="relative">
+                                <div className="w-20 h-20 rounded-full p-1 bg-gradient-to-tr from-primary to-gray-800 group-active:scale-95 transition-transform shadow-xl">
+                                    <img 
+                                    src="https://images.unsplash.com/photo-1563237023-b1e970526dcb?auto=format&fit=crop&w=400&q=80" 
+                                    alt="Edwards" 
+                                    className="w-full h-full object-cover rounded-full border-4 border-[#1A1A1A]"
+                                    />
                                 </div>
-                            ) : (
-                                <p className="text-sm text-gray-500">Start your gourmet journey.</p>
-                            )}
-                        </div>
-                    </Link>
-                    
-                    {/* Minimalist Top Actions */}
-                    <div className="flex flex-col items-end gap-4">
-                        <button className="w-10 h-10 rounded-full flex items-center justify-center bg-white/5 text-white/60 hover:bg-white/10 hover:text-white transition-colors">
-                            <Settings size={20} strokeWidth={2} />
-                        </button>
+                                <div className="absolute -bottom-1 -right-1 bg-white text-black text-xs font-black px-2 py-0.5 rounded-lg border-2 border-[#1A1A1A] shadow-lg">
+                                    Lv.{level}
+                                </div>
+                            </div>
+                            <div>
+                                <h2 className="text-2xl font-black leading-none tracking-tight mb-2 group-active:text-gray-300 transition-colors">edwards</h2>
+                                {mbti ? (
+                                    <div className="flex flex-col items-start gap-1">
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-primary font-black text-xl leading-none">{mbti.code}</span>
+                                            <span className="text-[10px] text-gray-400 font-bold uppercase tracking-widest border border-white/10 px-1.5 py-0.5 rounded">{mbti.title}</span>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <p className="text-xs text-gray-500">Start your journey.</p>
+                                )}
+                            </div>
+                        </Link>
                         
-                        {/* Minimalist View Toggle */}
-                        <div className="flex bg-black/40 rounded-lg p-1 backdrop-blur-md border border-white/5">
-                            <button 
-                                onClick={() => setViewMode('album')} 
-                                className={`p-2 rounded-md transition-all ${viewMode === 'album' ? 'bg-white/10 text-white' : 'text-white/30 hover:text-white/60'}`}
-                            >
-                                <Grid size={18} strokeWidth={2.5} />
+                        {/* Minimalist Top Actions */}
+                        <div className="flex flex-col items-end gap-3">
+                            <button className="w-8 h-8 rounded-full flex items-center justify-center bg-white/5 text-white/60 hover:bg-white/10 hover:text-white transition-colors">
+                                <Settings size={16} strokeWidth={2} />
                             </button>
-                            <button 
-                                onClick={() => setViewMode('lists')} 
-                                className={`p-2 rounded-md transition-all ${viewMode === 'lists' ? 'bg-white/10 text-white' : 'text-white/30 hover:text-white/60'}`}
-                            >
-                                <List size={18} strokeWidth={2.5} />
-                            </button>
+                            
+                            {/* Minimalist View Toggle */}
+                            <div className="flex bg-black/40 rounded-lg p-1 backdrop-blur-md border border-white/5">
+                                <button 
+                                    onClick={() => setViewMode('album')} 
+                                    className={`p-1.5 rounded-md transition-all ${viewMode === 'album' ? 'bg-white/10 text-white' : 'text-white/30 hover:text-white/60'}`}
+                                >
+                                    <Grid size={14} strokeWidth={2.5} />
+                                </button>
+                                <button 
+                                    onClick={() => setViewMode('lists')} 
+                                    className={`p-1.5 rounded-md transition-all ${viewMode === 'lists' ? 'bg-white/10 text-white' : 'text-white/30 hover:text-white/60'}`}
+                                >
+                                    <List size={14} strokeWidth={2.5} />
+                                </button>
+                            </div>
                         </div>
                     </div>
-                </div>
 
-                {/* Bottom Stats Row */}
-                <div className="flex items-center gap-8 border-t border-white/5 pt-6 mt-2">
-                     <div className="flex flex-col">
-                        <span className="text-3xl font-black text-white leading-none">{records.length}</span>
-                        <span className="text-[10px] text-gray-500 font-bold uppercase tracking-widest mt-1">Logs</span>
-                     </div>
-                     <div className="flex flex-col">
-                        <span className="text-3xl font-black text-white leading-none">{earnedBadges.length}</span>
-                        <span className="text-[10px] text-gray-500 font-bold uppercase tracking-widest mt-1">Badges</span>
-                     </div>
+                    {/* Bottom Stats Row */}
+                    <div className="flex items-center gap-6 border-t border-white/5 pt-4">
+                        <div className="flex flex-col">
+                            <span className="text-2xl font-black text-white leading-none">{records.length}</span>
+                            <span className="text-[9px] text-gray-500 font-bold uppercase tracking-widest mt-1">Logs</span>
+                        </div>
+                        <div className="flex flex-col">
+                            <span className="text-2xl font-black text-white leading-none">{earnedBadges.length}</span>
+                            <span className="text-[9px] text-gray-500 font-bold uppercase tracking-widest mt-1">Badges</span>
+                        </div>
+                        {/* Nuance Text */}
+                        {mbti && (
+                            <div className="flex-1 text-right">
+                                <p className="text-[10px] text-gray-500 font-medium italic">"{mbti.nuance}"</p>
+                            </div>
+                        )}
+                    </div>
                 </div>
             </div>
         )}

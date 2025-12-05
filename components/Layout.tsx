@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { useRef, useEffect } from 'react';
 import { ArrowLeft } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -24,10 +24,19 @@ export const Layout: React.FC<LayoutProps> = ({
   backgroundColor = 'bg-background'
 }) => {
   const navigate = useNavigate();
+  const location = useLocation();
+  const mainRef = useRef<HTMLElement>(null);
 
   const handleBack = () => {
     navigate(-1);
   };
+
+  // Scroll to top whenever the path changes (e.g. clicking a related record in RecordDetail)
+  useEffect(() => {
+    if (mainRef.current) {
+      mainRef.current.scrollTop = 0;
+    }
+  }, [location.pathname]);
 
   return (
     <div className="h-[100dvh] bg-gray-50 flex justify-center overflow-hidden">
@@ -51,7 +60,10 @@ export const Layout: React.FC<LayoutProps> = ({
 
         {/* Content */}
         {/* min-h-0 is crucial for nested flex scrolling */}
-        <main className={`flex-1 flex flex-col min-h-0 relative ${scrollable ? 'overflow-y-auto overflow-x-hidden' : 'overflow-hidden'} ${hasTabBar && scrollable ? 'pb-[100px]' : ''}`}>
+        <main 
+          ref={mainRef}
+          className={`flex-1 flex flex-col min-h-0 relative ${scrollable ? 'overflow-y-auto overflow-x-hidden' : 'overflow-hidden'} ${hasTabBar && scrollable ? 'pb-[100px]' : ''}`}
+        >
           {children}
         </main>
 

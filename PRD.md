@@ -1,3 +1,4 @@
+
 # PRD: meemee (미미) - v1.0
 
 ## 1. Product Overview
@@ -7,8 +8,8 @@
 
 ## 2. Core Value Proposition
 1.  **Smart Recording**: 사진만 찍으면 메뉴, 장소, 태그까지 AI가 분석해주어 기록의 편의성을 높입니다.
-2.  **Identity Discovery**: "나 맵찔이인가?" 같은 막연한 생각을 **구체적인 데이터(Taste DNA)**와 **유형(MBTI)**으로 정의해줍니다.
-3.  **Social Gastronomy**: "맛집 추천해줘" 대신, 내 입맛 데이터와 매칭률이 높은 식당을 과학적으로 추천받습니다.
+2.  **Manual Gourmet Note**: AI가 써주는 글이 아닌, 전문적인 미식 키워드를 활용해 **사용자가 직접 작성하는 깊이 있는 기록**을 지향합니다.
+3.  **Identity Discovery**: "나 맵찔이인가?" 같은 막연한 생각을 **구체적인 데이터(Taste DNA)**와 **유형(MBTI)**으로 정의해줍니다.
 
 ---
 
@@ -43,9 +44,9 @@
     *   `Keywords`: 분위기/식감 키워드 추천.
 3.  **Taste Evaluation**: 5가지 맛 슬라이더 (Weak - Balanced - Bold) 조절.
 4.  **Detailed Evaluation**: 
-    *   **Venue**: 분위기, 서비스, 편의시설 태그 선택.
-    *   **Menu**: 식감(Texture), 향미(Flavor), 뉘앙스(Note) 태그 선택.
-5.  **Manual Writing**: 선택한 키워드를 참고하여 사용자가 **직접** 테이스팅 노트를 작성.
+    *   **The Palate (Menu)**: 식감(Texture), 향미(Flavor), 뉘앙스(Note) 전문 키워드 선택.
+    *   **The Vibe (Venue)**: 분위기, 서비스 태그 선택.
+5.  **Manual Writing**: 선택한 키워드를 프롬프트 삼아 사용자가 **직접** 테이스팅 노트를 작성. (명조체 적용)
 6.  **Ranking (Binary Search)**: '좋아요' 선택 시 기존 맛집과 1:1 토너먼트 대결로 정확한 순위 산정.
 
 ### C. Gamification & Badge
@@ -93,18 +94,6 @@ interface ReviewRecord {
 }
 ```
 
-### GourmetMBTI
-유저 분석 결과.
-```typescript
-interface GourmetMBTI {
-  code: string;       // "BZRH"
-  title: string;      // "도파민 사냥꾼"
-  nuance: string;     // 상세 설명
-  favoriteCategories: string[];
-  scores: TasteProfile; // 평균 점수
-}
-```
-
 ---
 
 ## 6. UX/UI Guidelines
@@ -113,7 +102,7 @@ interface GourmetMBTI {
     *   UI 요소: Sans-serif (Inter/Pretendard) - 가독성.
     *   **테이스팅 노트 본문**: **Serif (명조)** - 감성, 진지함, 잡지 느낌.
 *   **Interaction**:
-    *   하단 탭바 (Bottom Tab): iOS 스타일 Blur 처리.
+    *   하단 탭바 (Bottom Tab): Liquid Glass (Floating Pill).
     *   플로팅 버튼 (FAB): 기록하기 접근성 강화.
 
 ---
@@ -122,4 +111,3 @@ interface GourmetMBTI {
 *   **Real Map Integration**: Google Maps / Naver Maps API 연동.
 *   **Backend**: Firebase/Supabase 연동을 통한 실시간 소셜 데이터 동기화.
 *   **Import**: 인스타그램 스토리/피드 자동 가져오기.
-*   **Wallet**: 맛집 영수증 스캔 인증 (OCR).

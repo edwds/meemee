@@ -100,6 +100,7 @@ export interface LeaderboardUser {
   avatar: string;
   level: number;
   mbti: string; // e.g. BZRH
+  nuance: string; // Taste description
   stats: {
     count: number; // Records or Followers depending on context
     label: string; // 'Records' or 'Followers'

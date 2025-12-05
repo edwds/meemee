@@ -1,3 +1,4 @@
+
 import React, { useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { MapPin, Users, Utensils, ArrowRight, Compass, Zap, TrendingUp, Flag } from 'lucide-react';
@@ -105,11 +106,11 @@ export const Discover: React.FC<DiscoverProps> = ({ userRecords }) => {
         <div>
             <div className="flex items-center gap-1.5 mb-0.5">
                 {Icon && <Icon size={18} className="text-primary" />}
-                <h3 className="text-lg font-bold text-secondary">{title}</h3>
+                <h3 className="text-lg font-bold text-white">{title}</h3>
             </div>
-            {subtitle && <p className="text-xs text-gray-400">{subtitle}</p>}
+            {subtitle && <p className="text-xs text-gray-500">{subtitle}</p>}
         </div>
-        <button className="text-xs font-bold text-gray-400 hover:text-primary flex items-center">
+        <button className="text-xs font-bold text-gray-500 hover:text-white flex items-center transition-colors">
             더보기 <ArrowRight size={12} className="ml-1" />
         </button>
       </div>
@@ -122,28 +123,29 @@ export const Discover: React.FC<DiscoverProps> = ({ userRecords }) => {
                     <Link 
                         key={item.id} 
                         to={`/restaurant/${item.id}`} 
-                        className="flex-shrink-0 w-[260px] bg-white rounded-2xl overflow-hidden border border-gray-100 shadow-sm snap-center active:scale-[0.98] transition-transform group"
+                        className="flex-shrink-0 w-[260px] bg-[#1A1A1A] rounded-2xl overflow-hidden border border-white/5 shadow-lg snap-center active:scale-[0.98] transition-transform group"
                     >
                         <div className="h-36 relative overflow-hidden">
-                            <img src={item.photo} alt={item.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
-                            <div className="absolute top-3 right-3 bg-white/90 backdrop-blur-md px-2 py-1 rounded-full shadow-sm flex items-center gap-1">
-                                <span className={`text-[10px] font-bold ${score >= 80 ? 'text-primary' : 'text-secondary'}`}>{score}%</span>
+                            <img src={item.photo} alt={item.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 opacity-80 group-hover:opacity-100" />
+                            <div className="absolute inset-0 bg-gradient-to-t from-[#1A1A1A] to-transparent opacity-60"></div>
+                            <div className="absolute top-3 right-3 bg-black/60 backdrop-blur-md px-2 py-1 rounded-full border border-white/10 flex items-center gap-1">
+                                <span className={`text-[10px] font-bold ${score >= 80 ? 'text-primary' : 'text-white'}`}>{score}%</span>
                             </div>
                             <div className="absolute bottom-2 left-2">
-                                <span className="bg-black/50 backdrop-blur-md text-white text-[10px] px-1.5 py-0.5 rounded font-bold">
+                                <span className="bg-black/50 backdrop-blur-md text-white text-[10px] px-1.5 py-0.5 rounded font-bold border border-white/5">
                                     {item.area}
                                 </span>
                             </div>
                         </div>
-                        <div className="p-3">
+                        <div className="p-4">
                             <div className="flex justify-between items-start mb-1">
-                                <h4 className="font-bold text-secondary text-base truncate pr-2">{item.name}</h4>
-                                <span className="text-[10px] text-gray-400 whitespace-nowrap">{item.category}</span>
+                                <h4 className="font-bold text-white text-base truncate pr-2">{item.name}</h4>
+                                <span className="text-[10px] text-gray-400 whitespace-nowrap bg-white/5 px-1.5 py-0.5 rounded">{item.category}</span>
                             </div>
-                            <p className="text-xs text-gray-500 truncate mb-2">{item.menu}</p>
+                            <p className="text-xs text-gray-500 truncate mb-3 font-medium">{item.menu}</p>
                             <div className="flex gap-1 overflow-hidden">
                                 {item.keywords.slice(0, 2).map(k => (
-                                    <span key={k} className="text-[9px] bg-gray-50 text-gray-400 px-1.5 py-0.5 rounded border border-gray-100 whitespace-nowrap">
+                                    <span key={k} className="text-[9px] bg-[#252525] text-gray-400 px-2 py-1 rounded border border-white/5 whitespace-nowrap">
                                         #{k}
                                     </span>
                                 ))}
@@ -153,8 +155,8 @@ export const Discover: React.FC<DiscoverProps> = ({ userRecords }) => {
                 );
             })
         ) : (
-            <div className="w-full py-8 text-center bg-gray-50 rounded-2xl border border-dashed border-gray-200">
-                <p className="text-xs text-gray-400">추천할 장소가 없습니다 🥲</p>
+            <div className="w-full py-8 text-center bg-[#1A1A1A] rounded-2xl border border-dashed border-white/10">
+                <p className="text-xs text-gray-500">추천할 장소가 없습니다 🥲</p>
             </div>
         )}
       </div>
@@ -162,14 +164,14 @@ export const Discover: React.FC<DiscoverProps> = ({ userRecords }) => {
   );
 
   return (
-    <Layout title="디스커버" hasTabBar={true} hideHeader={true}>
-      <div className="pb-4 pt-8">
+    <Layout title="디스커버" hasTabBar={true} hideHeader={true} backgroundColor="bg-black">
+      <div className="pb-32 pt-8 bg-black min-h-full">
         
         {/* Custom Header Title */}
-        <div className="px-5 mb-6 flex items-center justify-between">
-            <h1 className="text-2xl font-black text-secondary tracking-tight">디스커버</h1>
-            <span className="text-xs font-bold text-primary bg-orange-50 px-2.5 py-1 rounded-full">
-                Explore
+        <div className="px-5 mb-8 flex items-center justify-between">
+            <h1 className="text-3xl font-black text-white tracking-tight">Discover</h1>
+            <span className="text-[10px] font-bold text-black bg-white px-2.5 py-1 rounded-full uppercase tracking-wider">
+                Explorer
             </span>
         </div>
         
@@ -199,22 +201,22 @@ export const Discover: React.FC<DiscoverProps> = ({ userRecords }) => {
 
         {/* 4. Trending Now */}
         <div className="px-5 mb-8">
-            <div className="flex items-center gap-1.5 mb-3">
+            <div className="flex items-center gap-1.5 mb-4">
                 <TrendingUp size={18} className="text-red-500" />
-                <h3 className="text-lg font-bold text-secondary">오늘 뜨는 곳 🔥</h3>
+                <h3 className="text-lg font-bold text-white">오늘 뜨는 곳 🔥</h3>
             </div>
             <div className="grid grid-cols-2 gap-3">
                 {trendingPicks.slice(0, 4).map((item, idx) => (
-                    <Link key={item.id} to={`/restaurant/${item.id}`} className="bg-white rounded-xl p-3 flex items-center gap-3 border border-gray-100 shadow-sm active:scale-[0.98] transition-transform">
-                        <div className="w-12 h-12 bg-gray-100 rounded-lg flex-shrink-0 overflow-hidden relative">
-                            <img src={item.photo} className="w-full h-full object-cover" alt="" />
-                            <div className="absolute top-0 left-0 bg-secondary text-white text-[9px] font-bold w-4 h-4 flex items-center justify-center rounded-br">
+                    <Link key={item.id} to={`/restaurant/${item.id}`} className="bg-[#1A1A1A] rounded-2xl p-3 flex items-center gap-3 border border-white/5 shadow-lg active:scale-[0.98] transition-transform group">
+                        <div className="w-12 h-12 bg-gray-800 rounded-xl flex-shrink-0 overflow-hidden relative">
+                            <img src={item.photo} className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity" alt="" />
+                            <div className="absolute top-0 left-0 bg-white text-black text-[9px] font-black w-4 h-4 flex items-center justify-center rounded-br-lg">
                                 {idx + 1}
                             </div>
                         </div>
                         <div className="min-w-0">
-                            <h4 className="font-bold text-sm text-secondary truncate">{item.name}</h4>
-                            <div className="flex items-center text-[10px] text-gray-400">
+                            <h4 className="font-bold text-sm text-white truncate mb-0.5">{item.name}</h4>
+                            <div className="flex items-center text-[10px] text-gray-500">
                                 <MapPin size={10} className="mr-0.5" /> {item.area}
                             </div>
                         </div>
@@ -226,13 +228,13 @@ export const Discover: React.FC<DiscoverProps> = ({ userRecords }) => {
         {/* 5. Challenge Category */}
         {challengePicks.length > 0 && (
             <div className="px-5 mb-8">
-                 <div className="bg-gradient-to-br from-gray-900 to-gray-800 rounded-2xl p-5 text-white relative overflow-hidden">
+                 <div className="bg-gradient-to-br from-[#1A1A1A] to-black rounded-[2rem] p-6 text-white relative overflow-hidden border border-white/5 shadow-2xl">
                     {/* Deco */}
-                    <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full blur-2xl -translate-y-10 translate-x-10"></div>
+                    <div className="absolute top-0 right-0 w-40 h-40 bg-primary/20 rounded-full blur-3xl -translate-y-10 translate-x-10"></div>
                     
-                    <div className="relative z-10 mb-4">
-                        <div className="flex items-center gap-2 text-orange-400 font-bold text-xs uppercase tracking-wider mb-1">
-                            <Flag size={14} />
+                    <div className="relative z-10 mb-5">
+                        <div className="flex items-center gap-2 text-primary font-bold text-[10px] uppercase tracking-widest mb-1.5">
+                            <Flag size={12} />
                             New Challenge
                         </div>
                         <h3 className="text-xl font-bold leading-tight">
@@ -243,11 +245,11 @@ export const Discover: React.FC<DiscoverProps> = ({ userRecords }) => {
 
                     <div className="space-y-3 relative z-10">
                         {challengePicks.slice(0, 2).map(item => (
-                             <Link key={item.id} to={`/restaurant/${item.id}`} className="flex items-center bg-white/10 rounded-xl p-2 hover:bg-white/20 transition-colors backdrop-blur-sm">
-                                <img src={item.photo} className="w-12 h-12 rounded-lg object-cover mr-3" alt="" />
+                             <Link key={item.id} to={`/restaurant/${item.id}`} className="flex items-center bg-white/5 rounded-2xl p-2.5 hover:bg-white/10 transition-colors backdrop-blur-sm border border-white/5">
+                                <img src={item.photo} className="w-12 h-12 rounded-xl object-cover mr-3 opacity-90" alt="" />
                                 <div>
-                                    <h4 className="font-bold text-sm">{item.name}</h4>
-                                    <p className="text-[10px] text-gray-300">{item.menu}</p>
+                                    <h4 className="font-bold text-sm text-white">{item.name}</h4>
+                                    <p className="text-[10px] text-gray-400">{item.menu}</p>
                                 </div>
                              </Link>
                         ))}

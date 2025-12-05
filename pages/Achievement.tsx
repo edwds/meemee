@@ -1,265 +1,209 @@
+
 import React, { useMemo } from 'react';
 import { Layout } from '../components/Layout';
-import { ReviewRecord } from '../types';
+import { ReviewRecord, Preference } from '../types';
 import { calculateLevel, BADGES, calculateGourmetMBTI } from '../utils/gamification';
-import { Trophy, Lock, Camera, MapPin, PenTool, Star, Target, Award, TrendingUp, Hash } from 'lucide-react';
+import { Trophy, Lock, Star, Target, Crown, Utensils, TrendingUp, ChevronRight, ArrowLeft } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
 
 interface AchievementProps {
   records: ReviewRecord[];
 }
 
 export const Achievement: React.FC<AchievementProps> = ({ records }) => {
+  const navigate = useNavigate();
   const { level, nextLevelThreshold, progress } = calculateLevel(records.length);
   const earnedBadgeIds = BADGES.filter(b => b.condition(records)).map(b => b.id);
   const mbti = useMemo(() => calculateGourmetMBTI(records), [records]);
   
-  // --- Detailed Stats Calculation ---
-  const stats = useMemo(() => {
-    const totalPhotos = records.reduce((acc, r) => acc + r.photos.length, 0);
-    const totalAreas = new Set(records.map(r => r.location?.address || '').filter(Boolean)).size;
-    const totalWords = records.reduce((acc, r) => acc + (r.aiGeneratedText?.length || 0), 0);
-    const goodRatio = records.length > 0 
-        ? Math.round((records.filter(r => r.preference === '좋아요').length / records.length) * 100) 
-        : 0;
-
-    return { totalPhotos, totalAreas, totalWords, goodRatio };
-  }, [records]);
-
-  // Calculate Top Keywords
-  const topKeywords = useMemo(() => {
+  // 1. Soul Foods (Top Categories)
+  const soulFoods = useMemo(() => {
     const counts: Record<string, number> = {};
-    records.forEach(r => {
-        r.keywords.forEach(k => {
-            counts[k] = (counts[k] || 0) + 1;
-        });
-    });
-    return Object.entries(counts)
-        .sort((a, b) => b[1] - a[1])
-        .slice(0, 5)
-        .map(([key]) => key);
+    records.forEach(r => { if(r.category) counts[r.category] = (counts[r.category] || 0) + 1; });
+    return Object.entries(counts).sort((a,b) => b[1] - a[1]).slice(0, 3);
   }, [records]);
 
-  // --- Next Quest Logic ---
+  // 2. Hall of Fame (Top Ranked Restaurants)
+  const topRestaurants = useMemo(() => {
+     return records
+        .filter(r => r.preference === Preference.GOOD && r.rank)
+        .sort((a, b) => (a.rank || 999) - (b.rank || 999))
+        .slice(0, 3);
+  }, [records]);
+
+  // 3. Next Quest
   const nextQuest = useMemo(() => {
-      // Find the first unearned badge
       const unearned = BADGES.find(b => !earnedBadgeIds.includes(b.id));
-      if (unearned) {
-          return {
-              badge: unearned,
-              message: "다음 뱃지에 도전해보세요!"
-          };
-      }
-      return {
-          badge: null,
-          message: "모든 업적을 달성했습니다! 당신은 진정한 미식 마스터!"
-      };
+      return unearned 
+        ? { badge: unearned, label: "다음 뱃지 도전" } 
+        : { badge: null, label: "마스터 달성!" };
   }, [earnedBadgeIds]);
 
-  const renderTasteRow = (label: string, value: number, colorClass: string) => (
-    <div className="mb-3">
-        <div className="flex justify-between items-end mb-1">
-            <span className="text-xs font-bold text-gray-400">{label}</span>
-            <span className="text-xs font-bold text-secondary">{value.toFixed(1)}</span>
-        </div>
-        <div className="h-2 w-full bg-gray-100 rounded-full overflow-hidden">
-            <div 
-                className={`h-full rounded-full transition-all duration-1000 ${colorClass}`} 
-                style={{ width: `${(value / 5) * 100}%` }} 
-            />
-        </div>
-    </div>
-  );
-
   return (
-    <Layout title="미식 여정" showBack hasTabBar={true}>
-      <div className="pb-8 px-5 pt-4">
+    <Layout title="" hideHeader={true} hasTabBar={false} backgroundColor="bg-black">
+      <div className="pb-10 min-h-full text-white px-5">
         
-        {/* 1. LEVEL HERO SECTION */}
-        <section className="bg-secondary text-white rounded-[2rem] p-8 shadow-xl relative overflow-hidden mb-6 flex flex-col items-center text-center border border-gray-700">
-            {/* Glow Effects */}
-            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-64 h-64 bg-primary/20 rounded-full blur-[80px] pointer-events-none"></div>
-            
-            <div className="relative z-10 mb-4">
-                {/* Circular Progress */}
-                <div className="relative w-40 h-40 flex items-center justify-center">
-                    <svg className="w-full h-full -rotate-90" viewBox="0 0 36 36">
-                        {/* Background Circle */}
-                        <path
-                            className="text-gray-700"
-                            d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="3"
+        {/* Floating Back Button */}
+        <div className="sticky top-0 z-50 pt-4 pb-2 bg-black/80 backdrop-blur-sm -mx-5 px-5 mb-2">
+            <button 
+                onClick={() => navigate(-1)} 
+                className="w-10 h-10 rounded-full bg-[#1A1A1A] border border-white/10 flex items-center justify-center text-white hover:bg-[#252525] transition-colors"
+            >
+                <ArrowLeft size={20} />
+            </button>
+        </div>
+        
+        {/* 1. IDENTITY CARD */}
+        <section className="bg-[#1A1A1A] rounded-[2rem] p-6 shadow-xl border border-white/5 relative overflow-hidden mb-8">
+            <div className="flex items-center gap-5 relative z-10">
+                <div className="relative">
+                    <div className="w-20 h-20 rounded-full p-1 bg-gradient-to-tr from-primary to-gray-700">
+                         <img 
+                            src="https://images.unsplash.com/photo-1563237023-b1e970526dcb?auto=format&fit=crop&w=400&q=80" 
+                            className="w-full h-full object-cover rounded-full border-4 border-[#1A1A1A]" 
+                            alt="User"
                         />
-                        {/* Progress Circle */}
-                        <path
-                            className="text-primary drop-shadow-[0_0_10px_rgba(255,107,53,0.5)]"
-                            d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="3"
-                            strokeDasharray={`${progress}, 100`}
-                            strokeLinecap="round"
-                        />
-                    </svg>
-                    <div className="absolute inset-0 flex flex-col items-center justify-center">
-                        <span className="text-sm font-bold text-gray-400 uppercase tracking-widest mb-1">Level</span>
-                        <span className="text-5xl font-black tracking-tighter text-white">{level}</span>
+                    </div>
+                    <div className="absolute -bottom-1 -right-1 bg-white text-black text-xs font-black px-2 py-0.5 rounded-lg border-2 border-[#1A1A1A]">
+                        Lv.{level}
                     </div>
                 </div>
+                <div>
+                    <h2 className="text-2xl font-black mb-1">edwards</h2>
+                    {mbti ? (
+                        <div>
+                             <div className="flex items-center gap-2 mb-1">
+                                <span className="text-primary font-black text-lg tracking-tight">{mbti.code}</span>
+                                <span className="text-[10px] text-gray-400 font-bold uppercase border border-white/10 px-1.5 py-0.5 rounded">{mbti.title}</span>
+                             </div>
+                             <p className="text-xs text-gray-500 font-medium line-clamp-1">"{mbti.nuance}"</p>
+                        </div>
+                    ) : (
+                        <p className="text-xs text-gray-500">기록을 시작해보세요.</p>
+                    )}
+                </div>
             </div>
-
-            <h2 className="text-xl font-bold mb-1">Gourmet Collector</h2>
-            <p className="text-sm text-gray-400 mb-4">다음 레벨까지 <span className="text-primary font-bold">{Math.ceil(5 - (records.length % 5))}개</span>의 기록이 필요해요</p>
-            
-            <div className="bg-white/10 px-4 py-2 rounded-xl text-xs font-medium border border-white/10">
-                현재 경험치: <span className="text-white font-bold">{records.length} XP</span>
-            </div>
+            {/* Background Deco */}
+            <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full blur-3xl -translate-y-10 translate-x-10"></div>
         </section>
 
-        {/* 2. NEXT QUEST (Motivation) */}
-        {nextQuest.badge && (
-            <section className="mb-6">
-                <div className="flex items-center gap-2 mb-3 px-1">
-                    <Target className="text-red-500" size={20} />
-                    <h3 className="font-bold text-secondary text-lg">다음 목표 (Next Quest)</h3>
-                </div>
-                
-                <div className="bg-gradient-to-r from-orange-50 to-white p-5 rounded-2xl border border-orange-100 shadow-sm flex items-center gap-4 relative overflow-hidden">
-                    <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center shadow-sm text-gray-300 flex-shrink-0 border border-gray-100">
-                        <Lock size={20} />
-                    </div>
-                    <div>
-                        <div className="text-[10px] font-bold text-primary uppercase tracking-wider mb-1">LOCKED BADGE</div>
-                        <h4 className="font-bold text-secondary text-base">{nextQuest.badge.label}</h4>
-                        <p className="text-xs text-gray-500 mt-0.5">{nextQuest.badge.description}</p>
-                    </div>
-                    <Award className="absolute right-[-10px] bottom-[-10px] text-orange-100 rotate-12" size={80} />
-                </div>
-            </section>
-        )}
-
-        {/* 3. TASTE DNA & DETAILED STATS */}
-        <section className="mb-8">
-             <div className="flex items-center gap-2 mb-4 px-1">
-                 <TrendingUp className="text-primary" size={20} />
-                 <h3 className="font-bold text-secondary text-lg">미식 데이터</h3>
+        {/* 2. PREFERENCES */}
+        <section className="mb-10">
+             <div className="flex items-center gap-2 mb-4">
+                 <Utensils className="text-primary" size={20} />
+                 <h3 className="font-bold text-lg">My Preferences</h3>
              </div>
 
-             {/* Taste Bars */}
-             <div className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm mb-4">
-                <h4 className="text-sm font-bold text-secondary mb-4">입맛 DNA</h4>
-                {mbti ? (
-                     <div className="grid grid-cols-2 gap-x-8 gap-y-2">
-                        {renderTasteRow('맵기 (Kick)', mbti.scores.spiciness, 'bg-red-400')}
-                        {renderTasteRow('단맛 (Main)', mbti.scores.sweetness, 'bg-pink-400')}
-                        {renderTasteRow('짠맛 (Main)', mbti.scores.saltiness, 'bg-blue-400')}
-                        {renderTasteRow('풍미 (Body)', mbti.scores.richness, 'bg-orange-400')}
-                    </div>
-                ) : (
-                    <div className="text-center py-6 text-xs text-gray-400">
-                        데이터가 충분하지 않습니다.
-                    </div>
-                )}
-
-                {/* Top Keywords */}
-                {topKeywords.length > 0 && (
-                    <div className="mt-4 pt-4 border-t border-gray-50">
-                        <div className="flex items-center gap-2 mb-3">
-                            <Hash size={16} className="text-gray-400" />
-                            <span className="text-xs font-bold text-gray-400">자주 쓰는 표현</span>
+             {/* Soul Food */}
+             <div className="mb-6">
+                <h4 className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-3 pl-1">Soul Food</h4>
+                <div className="flex gap-3">
+                    {soulFoods.length > 0 ? soulFoods.map(([cat, count], idx) => (
+                        <div key={cat} className="flex-1 bg-[#1A1A1A] rounded-2xl p-4 border border-white/5 flex flex-col items-center">
+                            <span className={`text-lg font-black mb-1 ${idx === 0 ? 'text-white' : 'text-gray-400'}`}>{cat}</span>
+                            <span className="text-xs text-gray-500 font-medium">{count} Records</span>
                         </div>
-                        <div className="flex flex-wrap gap-2">
-                            {topKeywords.map(k => (
-                                <span key={k} className="px-3 py-1.5 bg-gray-100 text-gray-600 rounded-lg text-xs font-bold border border-gray-200">
-                                    #{k}
-                                </span>
-                            ))}
-                        </div>
-                    </div>
-                )}
+                    )) : (
+                        <div className="w-full text-center py-4 bg-[#1A1A1A] rounded-2xl text-xs text-gray-500">데이터가 부족합니다.</div>
+                    )}
+                </div>
              </div>
 
-             {/* Stats Grid */}
-             <div className="grid grid-cols-2 gap-3">
-                <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm flex flex-col justify-between h-24">
-                    <div className="flex justify-between items-start">
-                        <span className="text-xs text-gray-400 font-medium">총 기록 사진</span>
-                        <Camera size={16} className="text-blue-400" />
-                    </div>
-                    <span className="text-2xl font-bold text-secondary">{stats.totalPhotos}</span>
-                </div>
-                <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm flex flex-col justify-between h-24">
-                    <div className="flex justify-between items-start">
-                        <span className="text-xs text-gray-400 font-medium">방문한 지역</span>
-                        <MapPin size={16} className="text-green-400" />
-                    </div>
-                    <span className="text-2xl font-bold text-secondary">{stats.totalAreas}</span>
-                </div>
-                <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm flex flex-col justify-between h-24">
-                    <div className="flex justify-between items-start">
-                        <span className="text-xs text-gray-400 font-medium">미식 만족도</span>
-                        <Star size={16} className="text-yellow-400" />
-                    </div>
-                    <span className="text-2xl font-bold text-secondary">{stats.goodRatio}%</span>
-                </div>
-                <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm flex flex-col justify-between h-24">
-                    <div className="flex justify-between items-start">
-                        <span className="text-xs text-gray-400 font-medium">기록한 글자수</span>
-                        <PenTool size={16} className="text-purple-400" />
-                    </div>
-                    <span className="text-2xl font-bold text-secondary">{stats.totalWords}</span>
+             {/* Hall of Fame */}
+             <div>
+                <h4 className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-3 pl-1">Hall of Fame</h4>
+                <div className="space-y-3">
+                    {topRestaurants.length > 0 ? topRestaurants.map((record) => (
+                         <Link key={record.id} to={`/record/${record.id}`} className="flex items-center bg-[#1A1A1A] p-2 pr-4 rounded-2xl border border-white/5 active:scale-[0.98] transition-transform">
+                             <div className="w-14 h-14 rounded-xl bg-gray-800 overflow-hidden relative mr-4 flex-shrink-0">
+                                 <img src={record.representativePhoto} className="w-full h-full object-cover" alt="" />
+                                 <div className="absolute top-0 left-0 bg-yellow-500 text-black text-[9px] font-black px-1.5 py-0.5 rounded-br-lg">
+                                     #{record.rank}
+                                 </div>
+                             </div>
+                             <div className="flex-1 min-w-0">
+                                 <h5 className="font-bold text-white text-base truncate">{record.title}</h5>
+                                 <p className="text-xs text-gray-500 truncate">{record.menu}</p>
+                             </div>
+                             <ChevronRight size={16} className="text-gray-600" />
+                         </Link>
+                    )) : (
+                        <div className="w-full text-center py-6 bg-[#1A1A1A] rounded-2xl text-xs text-gray-500">
+                            '좋아요' 평가와 함께 랭킹을 매겨보세요.
+                        </div>
+                    )}
                 </div>
              </div>
         </section>
 
-        {/* 4. BADGE COLLECTION (Hall of Fame) */}
+        {/* 3. GROWTH */}
+        <section className="mb-10">
+             <div className="flex items-center gap-2 mb-4">
+                 <TrendingUp className="text-green-500" size={20} />
+                 <h3 className="font-bold text-lg">Growth</h3>
+             </div>
+             
+             <div className="bg-[#1A1A1A] rounded-[2rem] p-6 border border-white/5">
+                 {/* Level Progress */}
+                 <div className="mb-6">
+                     <div className="flex justify-between items-end mb-2">
+                         <span className="text-sm font-bold text-white">Level {level}</span>
+                         <span className="text-xs text-gray-500 font-medium">{records.length} / {nextLevelThreshold} XP</span>
+                     </div>
+                     <div className="h-3 w-full bg-gray-800 rounded-full overflow-hidden">
+                         <div 
+                            className="h-full bg-gradient-to-r from-primary to-yellow-500 rounded-full shadow-[0_0_10px_rgba(255,107,53,0.4)]" 
+                            style={{ width: `${progress}%` }}
+                         />
+                     </div>
+                 </div>
+
+                 {/* Next Goal */}
+                 {nextQuest.badge && (
+                     <div className="bg-white/5 rounded-2xl p-4 flex items-center gap-4 border border-white/5">
+                         <div className="w-10 h-10 rounded-full bg-gray-800 flex items-center justify-center text-gray-500">
+                             <Target size={18} />
+                         </div>
+                         <div className="flex-1">
+                             <div className="text-[10px] font-bold text-primary uppercase tracking-wider mb-0.5">NEXT GOAL</div>
+                             <div className="text-sm font-bold text-white mb-0.5">{nextQuest.badge.label}</div>
+                             <div className="text-xs text-gray-500">{nextQuest.badge.description}</div>
+                         </div>
+                     </div>
+                 )}
+             </div>
+        </section>
+
+        {/* 4. COLLECTION */}
         <section>
-            <div className="flex items-center justify-between mb-4 px-1">
-                <h3 className="font-bold text-secondary text-lg flex items-center">
-                    <Trophy className="text-yellow-500 mr-2" size={20} />
-                    뱃지 컬렉션
-                </h3>
-                <span className="text-xs font-bold text-primary bg-orange-50 px-2 py-1 rounded-lg">
+            <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-2">
+                    <Crown className="text-yellow-500" size={20} />
+                    <h3 className="font-bold text-lg">Collection</h3>
+                </div>
+                <span className="text-xs font-bold text-gray-500 bg-[#1A1A1A] px-2 py-1 rounded-lg border border-white/5">
                     {earnedBadgeIds.length} / {BADGES.length}
                 </span>
             </div>
-           
-           <div className="grid grid-cols-3 gap-3">
-              {BADGES.map((badge) => {
-                const isUnlocked = earnedBadgeIds.includes(badge.id);
-                
-                return (
-                  <div 
-                    key={badge.id} 
-                    className={`aspect-square rounded-2xl flex flex-col items-center justify-center p-2 text-center transition-all border relative overflow-hidden group ${
-                        isUnlocked 
-                        ? `bg-white border-gray-100 shadow-sm` 
-                        : 'bg-gray-50 border-gray-100'
-                    }`}
-                  >
-                    {/* Badge Icon */}
-                    <div className={`w-10 h-10 rounded-full flex items-center justify-center mb-2 transition-transform ${
-                        isUnlocked ? badge.color : 'bg-gray-200 text-gray-400 grayscale'
-                    }`}>
-                        {isUnlocked ? badge.icon : <Lock size={16} />}
-                    </div>
-                    
-                    <span className={`text-[10px] font-bold leading-tight ${isUnlocked ? 'text-secondary' : 'text-gray-400'}`}>
-                        {badge.label}
-                    </span>
-
-                    {/* Tooltip / Overlay */}
-                    <div className="absolute inset-0 bg-black/80 text-white flex items-center justify-center opacity-0 group-active:opacity-100 group-hover:opacity-100 transition-opacity p-2 z-20 pointer-events-none">
-                        <p className="text-[9px] font-medium break-keep">
-                            {badge.description}
-                        </p>
-                    </div>
-                  </div>
-                );
-              })}
-           </div>
+            
+            <div className="grid grid-cols-4 gap-3">
+                {BADGES.map((badge) => {
+                    const isUnlocked = earnedBadgeIds.includes(badge.id);
+                    return (
+                        <div key={badge.id} className="flex flex-col items-center gap-2">
+                             <div className={`w-14 h-14 rounded-2xl flex items-center justify-center border transition-all ${
+                                 isUnlocked 
+                                 ? 'bg-[#1A1A1A] border-primary/30 text-primary shadow-[0_0_15px_rgba(255,107,53,0.2)]' 
+                                 : 'bg-[#111] border-white/5 text-gray-700'
+                             }`}>
+                                 {isUnlocked ? badge.icon : <Lock size={18} />}
+                             </div>
+                        </div>
+                    );
+                })}
+            </div>
         </section>
+
       </div>
     </Layout>
   );

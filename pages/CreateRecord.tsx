@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Camera, X, Wand2, Users, Calendar, Sparkles, Trophy, Swords, ChefHat, Tag, Utensils, Loader2, MapPin, Check, AlignLeft, Lightbulb, Coffee, Volume2, Smile, ThumbsUp, Music, Armchair, Car, Accessibility, DollarSign, Gift, Zap } from 'lucide-react';
@@ -5,7 +6,6 @@ import { Layout } from '../components/Layout';
 import { Button } from '../components/Button';
 import { Preference, TasteProfile, ReviewRecord, DetailedEvaluation } from '../types';
 import { analyzeImageContext } from '../services/geminiService';
-import { calculateGourmetMBTI } from '../utils/gamification';
 import * as EXIF from 'exif-js';
 
 const EXIF_LIB = EXIF as any;
@@ -95,9 +95,9 @@ export const CreateRecord: React.FC<CreateRecordProps> = ({ onSave, existingReco
   const [location, setLocation] = useState<LocationInfo | null>(null);
   const [reviewText, setReviewText] = useState('');
   
-  // Taste Profile State
+  // Taste Profile State - Initialized to 3 (Balanced)
   const [tasteProfile, setTasteProfile] = useState<TasteProfile>({
-    spiciness: 1, sweetness: 1, saltiness: 1, acidity: 1, richness: 1
+    spiciness: 3, sweetness: 3, saltiness: 3, acidity: 3, richness: 3
   });
 
   // Detailed Evaluation State - Gourmet Structure
@@ -253,12 +253,29 @@ export const CreateRecord: React.FC<CreateRecordProps> = ({ onSave, existingReco
     setTasteProfile(prev => ({ ...prev, [key]: value }));
   };
 
+  // Helper to find category for recommended tags
+  const findKeywordCategory = (tag: string) => {
+      // Search Menu
+      for (const subCat of Object.keys(GOURMET_KEYWORDS.menu)) {
+          if (GOURMET_KEYWORDS.menu[subCat as keyof typeof GOURMET_KEYWORDS.menu].includes(tag)) {
+              return { category: 'menu', subCategory: subCat };
+          }
+      }
+      // Search Venue
+      for (const subCat of Object.keys(GOURMET_KEYWORDS.venue)) {
+          if (GOURMET_KEYWORDS.venue[subCat as keyof typeof GOURMET_KEYWORDS.venue].includes(tag)) {
+              return { category: 'venue', subCategory: subCat };
+          }
+      }
+      return null;
+  };
+
   // Improved Tag Handling
   const toggleEvalTag = (category: 'venue' | 'menu', subCategory: string, tag: string) => {
     setDetailedEval(prev => {
-      const catKey = category as keyof DetailedEvaluation;
-      const subKey = subCategory as keyof DetailedEvaluation[typeof catKey];
-      const currentList = prev[catKey][subKey] as string[];
+      // Cast to Record<string, string[]> to avoid union type index errors
+      const section = prev[category] as Record<string, string[]>;
+      const currentList = section[subCategory] || [];
       
       const newList = currentList.includes(tag) 
         ? currentList.filter(t => t !== tag) 
@@ -328,102 +345,108 @@ export const CreateRecord: React.FC<CreateRecordProps> = ({ onSave, existingReco
     navigate('/');
   };
 
+  // --- DARK THEME COMPONENTS ---
+  const DarkInput = ({ label, value, onChange, placeholder, type = 'text' }: any) => (
+    <div className="space-y-2">
+        <label className="text-xs font-bold text-gray-500 uppercase tracking-widest ml-1">{label}</label>
+        <input 
+            type={type}
+            value={value} 
+            onChange={onChange} 
+            className="w-full p-4 bg-[#1A1A1A] border border-white/5 rounded-2xl text-base font-medium text-white placeholder-gray-600 focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all" 
+            placeholder={placeholder} 
+        />
+    </div>
+  );
+
   // --- RENDER STEPS ---
   const renderPhotosStep = () => (
-    <div className="h-full relative flex flex-col">
+    <div className="h-full relative flex flex-col bg-black">
       <div className="flex-1 overflow-y-auto p-6 space-y-6 no-scrollbar pb-32">
-        <div className="text-center space-y-2 mb-6 mt-4">
-          <h2 className="text-2xl font-bold text-secondary">어떤 미식이었나요?</h2>
-          <p className="text-lg text-gray-500">맛있는 순간의 사진을 골라주세요</p>
+        <div className="text-center space-y-2 mb-8 mt-6">
+          <h2 className="text-3xl font-black text-white tracking-tight">Capture<br/>The Moment</h2>
+          <p className="text-sm text-gray-400 font-medium">맛있는 순간을 기록하세요</p>
         </div>
         <div className="grid grid-cols-3 gap-3">
-          <label className="aspect-square rounded-xl border-2 border-dashed border-gray-300 flex flex-col items-center justify-center cursor-pointer hover:bg-gray-50 transition active:scale-95">
-            <Camera className="text-gray-400 mb-2" size={32} />
-            <span className="text-sm text-gray-500 font-medium">사진 추가</span>
+          <label className="aspect-square rounded-2xl bg-[#1A1A1A] border border-dashed border-white/20 flex flex-col items-center justify-center cursor-pointer hover:bg-[#252525] transition active:scale-95 group">
+            <Camera className="text-gray-500 group-hover:text-primary transition-colors mb-2" size={28} />
+            <span className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">Add Photo</span>
             <input type="file" accept="image/*" multiple onChange={handleImageUpload} className="hidden" />
           </label>
           {photos.map((photo, idx) => (
-            <div key={idx} className="aspect-square rounded-xl overflow-hidden relative shadow-sm border border-gray-200">
-              <img src={photo} className="w-full h-full object-cover" />
-              <button onClick={() => setPhotos(p => p.filter((_, i) => i !== idx))} className="absolute top-1 right-1 bg-black/60 text-white p-1.5 rounded-full"><X size={16} /></button>
+            <div key={idx} className="aspect-square rounded-2xl overflow-hidden relative shadow-lg border border-white/5 bg-gray-900 group">
+              <img src={photo} className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity" />
+              <button onClick={() => setPhotos(p => p.filter((_, i) => i !== idx))} className="absolute top-1 right-1 bg-black/60 text-white p-1 rounded-full backdrop-blur-md hover:bg-red-500/80 transition-colors"><X size={14} /></button>
             </div>
           ))}
         </div>
       </div>
       {isAnalyzing && (
-        <div className="absolute inset-0 bg-white/90 backdrop-blur-sm z-[60] flex flex-col items-center justify-center text-center p-6">
-          <div className="w-20 h-20 bg-orange-50 rounded-full flex items-center justify-center mb-6 relative">
+        <div className="absolute inset-0 bg-black/80 backdrop-blur-md z-[60] flex flex-col items-center justify-center text-center p-6 animate-fade-in">
+          <div className="w-24 h-24 bg-primary/20 rounded-full flex items-center justify-center mb-6 relative animate-pulse">
              <Loader2 size={40} className="text-primary animate-spin" />
-             <Wand2 size={20} className="absolute text-primary" />
+             <Wand2 size={24} className="absolute text-white drop-shadow-[0_0_10px_rgba(255,255,255,0.8)]" />
           </div>
-          <h3 className="text-xl font-bold text-secondary mb-2">미식 데이터 분석 중</h3>
-          <p className="text-base text-gray-500">메뉴와 장소를 확인하고 있어요...</p>
+          <h3 className="text-2xl font-black text-white mb-2">Analyzing...</h3>
+          <p className="text-sm text-gray-400">AI가 미식 데이터를 분석 중입니다</p>
         </div>
       )}
-      <div className="absolute bottom-0 left-0 w-full p-4 pb-10 bg-white border-t border-gray-100 z-50">
+      <div className="absolute bottom-0 left-0 w-full p-5 pb-10 bg-black border-t border-white/5 z-50">
           <Button fullWidth size="lg" disabled={photos.length === 0 || isAnalyzing} onClick={handleAnalyzeAndNext}>다음으로</Button>
       </div>
     </div>
   );
 
   const renderDetailsStep = () => (
-    <div className="h-full relative flex flex-col">
+    <div className="h-full relative flex flex-col bg-black">
         <div className="flex-1 overflow-y-auto p-6 space-y-6 no-scrollbar pb-32">
-            <h2 className="text-2xl font-bold text-secondary mb-6 mt-4">기본 정보를<br/>확인해주세요</h2>
-            <div className="space-y-6">
-                <div className="space-y-1.5">
-                    <label className="text-sm font-bold text-gray-500 uppercase ml-1">장소 이름</label>
-                    <input type="text" value={title} onChange={(e) => setTitle(e.target.value)} className="w-full p-4 bg-white border border-gray-200 rounded-2xl text-base font-semibold text-gray-900" placeholder="예: 오마카세 스시선" />
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-1.5">
-                        <label className="text-sm font-bold text-gray-500 uppercase ml-1">카테고리</label>
-                        <input type="text" value={category} onChange={(e) => setCategory(e.target.value)} className="w-full p-3.5 bg-white border border-gray-200 rounded-2xl text-base font-medium text-gray-900" placeholder="예: 한식" />
-                    </div>
-                    <div className="space-y-1.5">
-                        <label className="text-sm font-bold text-gray-500 uppercase ml-1">지역</label>
-                        <input type="text" value={area} onChange={(e) => setArea(e.target.value)} className="w-full p-3.5 bg-white border border-gray-200 rounded-2xl text-base font-medium text-gray-900" placeholder="예: 성수동" />
-                    </div>
-                </div>
-                <div className="space-y-1.5">
-                    <label className="text-sm font-bold text-gray-500 uppercase ml-1">먹은 메뉴</label>
-                    <input type="text" value={menu} onChange={(e) => setMenu(e.target.value)} className="w-full p-4 bg-white border border-gray-200 rounded-2xl text-base font-medium text-gray-900" placeholder="메뉴 입력" />
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-1.5">
-                        <label className="text-sm font-bold text-gray-500 uppercase ml-1">날짜</label>
-                        <input type="date" value={visitDate} onChange={(e) => setVisitDate(e.target.value)} className="w-full p-3.5 bg-white border border-gray-200 rounded-2xl text-base font-medium text-gray-900" />
-                    </div>
-                    <div className="space-y-1.5">
-                        <label className="text-sm font-bold text-gray-500 uppercase ml-1">함께한 사람</label>
-                        <input type="text" value={companions} onChange={(e) => setCompanions(e.target.value)} className="w-full p-3.5 bg-white border border-gray-200 rounded-2xl text-base font-medium text-gray-900" placeholder="혼자" />
-                    </div>
-                </div>
+            <div className="mt-4 mb-8">
+                 <h2 className="text-3xl font-black text-white mb-2">Basic Info</h2>
+                 <p className="text-sm text-gray-400">기본 정보를 확인해주세요</p>
+            </div>
+            
+            <DarkInput label="장소 이름 (Place)" value={title} onChange={(e: any) => setTitle(e.target.value)} placeholder="예: 오마카세 스시선" />
+            
+            <div className="grid grid-cols-2 gap-4">
+                <DarkInput label="카테고리" value={category} onChange={(e: any) => setCategory(e.target.value)} placeholder="예: 일식" />
+                <DarkInput label="지역 (Area)" value={area} onChange={(e: any) => setArea(e.target.value)} placeholder="예: 성수동" />
+            </div>
+
+            <DarkInput label="메뉴 (Menu)" value={menu} onChange={(e: any) => setMenu(e.target.value)} placeholder="주문한 메뉴" />
+
+            <div className="grid grid-cols-2 gap-4">
+                <DarkInput label="날짜" type="date" value={visitDate} onChange={(e: any) => setVisitDate(e.target.value)} />
+                <DarkInput label="함께한 사람" value={companions} onChange={(e: any) => setCompanions(e.target.value)} placeholder="혼자" />
             </div>
         </div>
-        <div className="absolute bottom-0 left-0 w-full p-4 pb-10 bg-white border-t border-gray-100 z-50">
+        <div className="absolute bottom-0 left-0 w-full p-5 pb-10 bg-black border-t border-white/5 z-50">
             <Button fullWidth size="lg" disabled={!title} onClick={() => setStep(STEPS.PREFERENCE)}>다음으로</Button>
         </div>
     </div>
   );
 
   const renderPreferenceStep = () => (
-    <div className="h-full relative flex flex-col justify-between">
-      <div className="flex-1 flex flex-col justify-center px-6">
-        <h2 className="text-2xl font-bold text-secondary text-center mb-10">전반적인 경험은 어땠나요?</h2>
+    <div className="h-full relative flex flex-col justify-between bg-black">
+      <div className="flex-1 flex flex-col justify-center px-6 pb-20">
+        <h2 className="text-3xl font-black text-white text-center mb-12">How was it?</h2>
         <div className="grid grid-cols-1 gap-4">
             {[Preference.GOOD, Preference.NORMAL, Preference.BAD].map((p) => (
             <button
                 key={p}
                 onClick={() => { setPreference(p); setStep(STEPS.DETAILED_EVAL); }}
-                className={`p-6 rounded-2xl font-medium transition-all flex items-center justify-between border-2 active:scale-95 ${
+                className={`p-6 rounded-3xl transition-all flex items-center justify-between border active:scale-95 group relative overflow-hidden ${
                 preference === p
-                    ? 'border-primary bg-orange-50 text-primary'
-                    : 'border-gray-100 bg-white text-gray-500 hover:border-gray-200'
+                    ? 'bg-primary/20 border-primary text-white shadow-[0_0_20px_rgba(255,107,53,0.3)]'
+                    : 'bg-[#1A1A1A] border-white/5 text-gray-400 hover:bg-[#252525] hover:text-white'
                 }`}
             >
-                <span className="text-lg font-bold">{p}</span>
-                <span className="text-4xl">{p === Preference.GOOD ? '😍' : p === Preference.NORMAL ? '🙂' : '😢'}</span>
+                {/* Glow Effect */}
+                <div className={`absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent transition-transform duration-1000 ${preference === p ? 'translate-x-full' : '-translate-x-full'}`}></div>
+
+                <span className="text-xl font-bold tracking-tight">{p}</span>
+                <span className={`text-4xl filter drop-shadow-lg transition-transform ${preference === p ? 'scale-110' : 'grayscale group-hover:grayscale-0'}`}>
+                    {p === Preference.GOOD ? '😍' : p === Preference.NORMAL ? '🙂' : '😢'}
+                </span>
             </button>
             ))}
         </div>
@@ -431,154 +454,203 @@ export const CreateRecord: React.FC<CreateRecordProps> = ({ onSave, existingReco
     </div>
   );
 
-  const renderDetailedEvalStep = () => (
-    <div className="h-full relative flex flex-col">
-      <div className="flex-1 overflow-y-auto p-6 space-y-10 no-scrollbar pb-32">
-        <div className="mt-4">
-            <h2 className="text-2xl font-bold text-secondary mb-2">미식 디테일</h2>
-            <p className="text-gray-500 text-sm">맛과 경험을 상세하게 기록해보세요.</p>
-        </div>
-        
-        {/* TAB 1: MENU EVALUATION (The Palate) */}
-        <section>
-          <div className="flex items-center gap-2 mb-6">
-              <span className="bg-primary text-white p-1.5 rounded-lg"><ChefHat size={18}/></span>
-              <h3 className="text-lg font-bold text-secondary">The Palate (맛)</h3>
-          </div>
+  const renderDetailedEvalStep = () => {
+    // Determine Suggested Keywords
+    const suggestedKeywords = recommendedTags
+        .map(tag => {
+            const match = findKeywordCategory(tag);
+            return match ? { tag, ...match } : null;
+        })
+        .filter((item): item is { tag: string; category: 'venue' | 'menu'; subCategory: string } => !!item);
 
-          <div className="bg-white p-5 rounded-3xl border border-gray-100 shadow-sm space-y-8 mb-8">
-             {/* Taste Balance Sliders */}
-             <div>
-                <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-4">Taste Balance</h4>
-                <div className="space-y-6">
-                    {(Object.keys(tasteProfile).map((k) => (
-                    <div key={k}>
-                        <div className="flex justify-between mb-2 px-1">
-                            <span className="text-sm font-bold text-gray-700 capitalize w-20">{k.slice(0,3)}</span>
-                            <span className="text-xs font-medium text-primary">
-                                {tasteProfile[k as keyof TasteProfile] <= 2 ? '부족/연함' : tasteProfile[k as keyof TasteProfile] === 3 ? '적당함' : '강함/풍부'}
-                            </span>
+    return (
+        <div className="h-full relative flex flex-col bg-black">
+        <div className="flex-1 overflow-y-auto p-6 space-y-12 no-scrollbar pb-32">
+            <div className="mt-4">
+                <h2 className="text-3xl font-black text-white mb-2">Gourmet Details</h2>
+                <p className="text-sm text-gray-400">미식 경험을 상세하게 기록해보세요</p>
+            </div>
+            
+            {/* TAB 1: MENU EVALUATION (The Palate) */}
+            <section>
+            <div className="flex items-center gap-2 mb-6 text-primary">
+                <ChefHat size={20} />
+                <h3 className="text-xl font-black uppercase tracking-wider">The Palate</h3>
+            </div>
+
+            <div className="bg-[#1A1A1A] p-6 rounded-[2rem] border border-white/5 space-y-8">
+                {/* Taste Balance Sliders */}
+                <div>
+                    <h4 className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-6">Taste Balance</h4>
+                    <div className="space-y-6">
+                        {/* Properly type the keys to avoid any index error */}
+                        {(Object.keys(tasteProfile) as Array<keyof TasteProfile>).map((k) => (
+                        <div key={k}>
+                            <div className="flex justify-between mb-3 px-1">
+                                <span className="text-sm font-bold text-gray-300 capitalize w-20">{k.slice(0,3)}</span>
+                                <span className="text-xs font-bold text-primary">
+                                    {tasteProfile[k] <= 2 ? 'Weak' : tasteProfile[k] === 3 ? 'Balanced' : 'Bold'}
+                                </span>
+                            </div>
+                            <div className="flex gap-1.5 h-8">
+                            {[1,2,3,4,5].map(n => (
+                                <button 
+                                    key={n} 
+                                    onClick={() => handleTasteChange(k, n)} 
+                                    className={`flex-1 rounded transition-all duration-200 ${
+                                        tasteProfile[k] >= n 
+                                        ? n <= 2 ? 'bg-orange-900/40' : n === 3 ? 'bg-orange-600/60' : 'bg-primary shadow-[0_0_10px_rgba(255,107,53,0.5)]' 
+                                        : 'bg-white/5 hover:bg-white/10'
+                                    }`}
+                                />
+                            ))}
+                            </div>
                         </div>
-                        <div className="flex gap-1.5 h-10">
-                        {[1,2,3,4,5].map(n => (
-                            <button 
-                                key={n} 
-                                onClick={() => handleTasteChange(k as any, n)} 
-                                className={`flex-1 rounded-lg transition-all duration-200 ${
-                                    tasteProfile[k as keyof TasteProfile] >= n 
-                                    ? n <= 2 ? 'bg-orange-200' : n === 3 ? 'bg-orange-400' : 'bg-primary' 
-                                    : 'bg-gray-100 hover:bg-gray-200'
-                                }`}
-                            />
                         ))}
-                        </div>
-                        <div className="flex justify-between mt-1 px-1 text-[10px] text-gray-400 font-medium">
-                            <span>Weak</span>
-                            <span>Balanced</span>
-                            <span>Bold</span>
-                        </div>
                     </div>
-                    )))}
                 </div>
-             </div>
-             
-             {/* Gourmet Keywords */}
-             <div className="space-y-5 pt-4 border-t border-gray-50">
-                 <div>
-                    <label className="text-xs font-bold text-gray-500 mb-3 block">식감 (Texture)</label>
-                    <div className="flex flex-wrap gap-2">
-                        {GOURMET_KEYWORDS.menu.texture.map(tag => (
-                        <button key={tag} onClick={() => toggleEvalTag('menu', 'texture', tag)} className={`px-3 py-1.5 rounded-full text-xs font-bold border transition-all active:scale-95 ${detailedEval.menu.texture.includes(tag) ? 'bg-primary text-white border-primary shadow-sm' : 'bg-white text-gray-500 border-gray-200 hover:bg-gray-50'}`}>{tag}</button>
-                        ))}
-                    </div>
-                 </div>
-                 <div>
-                    <label className="text-xs font-bold text-gray-500 mb-3 block">향미 (Flavor)</label>
-                    <div className="flex flex-wrap gap-2">
-                        {GOURMET_KEYWORDS.menu.flavor.map(tag => (
-                        <button key={tag} onClick={() => toggleEvalTag('menu', 'flavor', tag)} className={`px-3 py-1.5 rounded-full text-xs font-bold border transition-all active:scale-95 ${detailedEval.menu.flavor.includes(tag) ? 'bg-primary text-white border-primary shadow-sm' : 'bg-white text-gray-500 border-gray-200 hover:bg-gray-50'}`}>{tag}</button>
-                        ))}
-                    </div>
-                 </div>
-                 <div>
-                    <label className="text-xs font-bold text-gray-500 mb-3 block">뉘앙스 (Note)</label>
-                    <div className="flex flex-wrap gap-2">
-                        {GOURMET_KEYWORDS.menu.note.map(tag => (
-                        <button key={tag} onClick={() => toggleEvalTag('menu', 'note', tag)} className={`px-3 py-1.5 rounded-full text-xs font-bold border transition-all active:scale-95 ${detailedEval.menu.note.includes(tag) ? 'bg-primary text-white border-primary shadow-sm' : 'bg-white text-gray-500 border-gray-200 hover:bg-gray-50'}`}>{tag}</button>
-                        ))}
-                    </div>
-                 </div>
-             </div>
-          </div>
-        </section>
+            </div>
+            </section>
+            
+            {/* Visual Separator */}
+            <div className="border-t border-white/10 mx-2"></div>
 
-        {/* TAB 2: VENUE EVALUATION (The Vibe) */}
-        <section>
-           <div className="flex items-center gap-2 mb-6">
-              <span className="bg-secondary text-white p-1.5 rounded-lg"><Armchair size={18}/></span>
-              <h3 className="text-lg font-bold text-secondary">The Vibe (공간)</h3>
-           </div>
-           
-           <div className="bg-white p-5 rounded-3xl border border-gray-100 shadow-sm space-y-6">
-              <div>
-                  <label className="text-xs font-bold text-gray-500 mb-3 block">분위기 (Atmosphere)</label>
-                  <div className="flex flex-wrap gap-2">
-                    {GOURMET_KEYWORDS.venue.atmosphere.map(tag => (
-                      <button key={tag} onClick={() => toggleEvalTag('venue', 'atmosphere', tag)} className={`px-3 py-1.5 rounded-full text-xs font-bold border transition-all active:scale-95 ${detailedEval.venue.atmosphere.includes(tag) ? 'bg-secondary text-white border-secondary shadow-sm' : 'bg-white text-gray-500 border-gray-200 hover:bg-gray-50'}`}>{tag}</button>
-                    ))}
-                  </div>
-              </div>
-              <div>
-                  <label className="text-xs font-bold text-gray-500 mb-3 block">서비스 / 편의</label>
-                  <div className="flex flex-wrap gap-2">
-                    {GOURMET_KEYWORDS.venue.service.map(tag => (
-                      <button key={tag} onClick={() => toggleEvalTag('venue', 'service', tag)} className={`px-3 py-1.5 rounded-full text-xs font-bold border transition-all active:scale-95 ${detailedEval.venue.service.includes(tag) ? 'bg-secondary text-white border-secondary shadow-sm' : 'bg-white text-gray-500 border-gray-200 hover:bg-gray-50'}`}>{tag}</button>
-                    ))}
-                  </div>
-              </div>
-           </div>
-        </section>
+            {/* AI Suggestions Section */}
+            {suggestedKeywords.length > 0 && (
+                <section className="animate-fade-in-up">
+                    <div className="flex items-center gap-2 mb-4 text-purple-400">
+                        <Sparkles size={18} />
+                        <h3 className="text-sm font-bold uppercase tracking-wider">AI Suggestions</h3>
+                    </div>
+                    <div className="bg-purple-900/20 p-5 rounded-2xl border border-purple-500/20">
+                         <div className="flex flex-wrap gap-2">
+                            {suggestedKeywords.map(({ tag, category, subCategory }) => {
+                                // Safe access to dynamic properties using casting
+                                const isSelected = (detailedEval[category] as Record<string, string[]>)[subCategory]?.includes(tag);
+                                return (
+                                    <button 
+                                        key={`suggest-${tag}`} 
+                                        onClick={() => toggleEvalTag(category, subCategory, tag)} 
+                                        className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-all active:scale-95 ${
+                                            isSelected 
+                                            ? 'bg-purple-600 text-white border-purple-500 shadow-[0_0_15px_rgba(168,85,247,0.4)]' 
+                                            : 'bg-purple-900/40 text-purple-200 border-purple-500/30 hover:bg-purple-900/60'
+                                        }`}
+                                    >
+                                        {tag}
+                                    </button>
+                                );
+                            })}
+                         </div>
+                    </div>
+                </section>
+            )}
 
-      </div>
-      <div className="absolute bottom-0 left-0 w-full p-4 pb-10 bg-white border-t border-gray-100 z-50">
-        <Button fullWidth size="lg" onClick={handleNextAfterEval}>다음으로</Button>
-      </div>
-    </div>
-  );
+            {/* Keywords Sections */}
+            <section>
+                <div className="space-y-6">
+                    {['Texture', 'Flavor', 'Note'].map((cat, i) => (
+                        <div key={cat}>
+                        <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-3 block pl-1">{cat}</label>
+                        <div className="flex flex-wrap gap-2">
+                            {GOURMET_KEYWORDS.menu[cat.toLowerCase() as keyof typeof GOURMET_KEYWORDS.menu].map(tag => {
+                                const isSelected = detailedEval.menu[cat.toLowerCase() as keyof typeof detailedEval.menu].includes(tag);
+                                return (
+                                    <button 
+                                        key={tag} 
+                                        onClick={() => toggleEvalTag('menu', cat.toLowerCase(), tag)} 
+                                        className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-all active:scale-95 ${
+                                            isSelected 
+                                            ? 'bg-primary text-white border-primary shadow-[0_0_15px_rgba(255,107,53,0.4)]' 
+                                            : 'bg-[#1A1A1A] text-gray-400 border-white/5 hover:bg-[#252525] hover:text-gray-200'
+                                        }`}
+                                    >
+                                        {tag}
+                                    </button>
+                                );
+                            })}
+                        </div>
+                        </div>
+                    ))}
+                </div>
+            </section>
+
+            {/* TAB 2: VENUE EVALUATION (The Vibe) */}
+            <section>
+            <div className="flex items-center gap-2 mb-6 text-white pt-6 border-t border-white/10">
+                <Armchair size={20} />
+                <h3 className="text-xl font-black uppercase tracking-wider">The Vibe</h3>
+            </div>
+            
+            <div className="space-y-6">
+                {['Atmosphere', 'Service'].map((cat) => (
+                    <div key={cat}>
+                        <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-3 block pl-1">{cat}</label>
+                        <div className="flex flex-wrap gap-2">
+                            {GOURMET_KEYWORDS.venue[cat.toLowerCase() as keyof typeof GOURMET_KEYWORDS.venue].map(tag => {
+                                const isSelected = detailedEval.venue[cat.toLowerCase() as keyof typeof detailedEval.venue].includes(tag);
+                                return (
+                                    <button 
+                                        key={tag} 
+                                        onClick={() => toggleEvalTag('venue', cat.toLowerCase(), tag)} 
+                                        className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-all active:scale-95 ${
+                                            isSelected 
+                                            ? 'bg-white text-black border-white shadow-[0_0_15px_rgba(255,255,255,0.3)]' 
+                                            : 'bg-[#1A1A1A] text-gray-400 border-white/5 hover:bg-[#252525] hover:text-gray-200'
+                                        }`}
+                                    >
+                                        {tag}
+                                    </button>
+                                );
+                            })}
+                        </div>
+                    </div>
+                ))}
+            </div>
+            </section>
+
+        </div>
+        <div className="absolute bottom-0 left-0 w-full p-5 pb-10 bg-black border-t border-white/5 z-50">
+            <Button fullWidth size="lg" onClick={handleNextAfterEval}>다음으로</Button>
+        </div>
+        </div>
+    );
+  };
 
   const renderWritingStep = () => (
-    <div className="h-full relative flex flex-col">
+    <div className="h-full relative flex flex-col bg-black">
       <div className="flex-1 overflow-y-auto p-6 no-scrollbar pb-32">
-         <h2 className="text-2xl font-bold text-secondary mt-4 mb-2">나만의 미식 로그를<br/>남겨주세요</h2>
-         <p className="text-sm text-gray-400 mb-6">선택한 키워드를 참고해서 자유롭게 적어보세요</p>
+         <h2 className="text-3xl font-black text-white mt-4 mb-2">Tasting Note</h2>
+         <p className="text-sm text-gray-400 mb-8">나만의 미식 로그를 남겨주세요</p>
          
          {/* Selected Tags Display */}
-         <div className="flex flex-wrap gap-1.5 mb-4 max-h-24 overflow-y-auto">
+         <div className="flex flex-wrap gap-1.5 mb-6 max-h-24 overflow-y-auto">
              {[
                  ...detailedEval.venue.atmosphere, 
                  ...detailedEval.venue.service, 
                  ...detailedEval.menu.texture, 
-                 ...detailedEval.menu.flavor,
+                 ...detailedEval.menu.flavor, 
                  ...detailedEval.menu.note
              ].map(k => (
-                 <span key={k} className="text-[10px] bg-gray-100 text-gray-500 px-2 py-1 rounded-lg">#{k}</span>
+                 <span key={k} className="text-[10px] bg-white/10 text-gray-300 px-2 py-1 rounded border border-white/5">#{k}</span>
              ))}
          </div>
 
-         <div className="bg-white p-4 rounded-2xl border border-primary/20 shadow-sm min-h-[300px] relative">
+         <div className="bg-[#1A1A1A] p-6 rounded-[2rem] border border-white/5 shadow-inner min-h-[350px] relative">
+             <div className="absolute top-4 left-4 opacity-20"><Quote size={24} className="text-white rotate-180" /></div>
              <textarea
                 value={reviewText}
                 onChange={(e) => setReviewText(e.target.value)}
                 placeholder="맛, 분위기, 서비스는 어땠나요?&#13;&#10;솔직한 감상을 기록해주세요."
-                className="w-full h-full min-h-[250px] resize-none outline-none text-base leading-relaxed text-secondary placeholder-gray-300 font-serif"
+                className="w-full h-full min-h-[300px] resize-none bg-transparent outline-none text-lg leading-loose text-gray-200 placeholder-gray-600 font-serif pt-6 relative z-10"
                 autoFocus
              />
-             <div className="absolute bottom-4 right-4 text-xs text-gray-300 font-bold">
-                 {reviewText.length}자
+             <div className="absolute bottom-6 right-6 text-xs text-gray-500 font-mono">
+                 {reviewText.length} chars
              </div>
          </div>
       </div>
-      <div className="absolute bottom-0 left-0 w-full p-4 pb-10 bg-white border-t border-gray-100 z-50">
+      <div className="absolute bottom-0 left-0 w-full p-5 pb-10 bg-black border-t border-white/5 z-50">
          <Button fullWidth size="lg" disabled={reviewText.length < 5} onClick={() => preference === Preference.GOOD ? setStep(STEPS.RANKING) : handleFinalSave()}>
              {preference === Preference.GOOD ? '랭킹 정하기' : '완료하기'}
          </Button>
@@ -591,44 +663,50 @@ export const CreateRecord: React.FC<CreateRecordProps> = ({ onSave, existingReco
     const opponent = sortedExisting[mid];
 
     return (
-      <div className="h-full relative flex flex-col">
+      <div className="h-full relative flex flex-col bg-black">
          <div className="flex-1 overflow-y-auto p-6 text-center no-scrollbar pb-32">
-            <h2 className="text-2xl font-bold text-secondary mb-2 mt-4">랭킹 매치</h2>
-            <p className="text-lg text-gray-500 mb-8">더 만족스러웠던 경험을 골라주세요</p>
+            <h2 className="text-3xl font-black text-white mb-2 mt-4">Ranking Match</h2>
+            <p className="text-sm text-gray-400 mb-10">더 만족스러웠던 경험을 선택하세요</p>
 
             {status === 'comparing' && opponent ? (
                 <div className="flex flex-col justify-center space-y-6 pb-8">
                     <button 
                         onClick={() => handleComparisonChoice('new')}
-                        className="bg-white p-5 rounded-2xl shadow-md border-2 border-transparent active:border-primary transition-all group relative overflow-hidden text-left w-full active:scale-[0.98]"
+                        className="bg-[#1A1A1A] p-0 rounded-3xl shadow-lg border border-white/5 active:border-primary transition-all group relative overflow-hidden text-left w-full active:scale-[0.98]"
                     >
-                        <div className="absolute top-0 left-0 bg-primary text-white text-xs font-bold px-3 py-1 rounded-br-lg z-10">NEW</div>
-                        <div className="w-full h-40 bg-gray-100 rounded-xl mb-4 overflow-hidden">
-                             <img src={photos[0]} className="w-full h-full object-cover" alt="New" />
+                        <div className="absolute top-0 left-0 bg-primary text-white text-xs font-black px-4 py-1.5 rounded-br-2xl z-10 uppercase tracking-wider">Challenger</div>
+                        <div className="w-full h-40 bg-gray-800 mb-0 overflow-hidden relative">
+                             <img src={photos[0]} className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity" alt="New" />
+                             <div className="absolute inset-0 bg-gradient-to-t from-[#1A1A1A] to-transparent"></div>
                         </div>
-                        <h3 className="text-xl font-bold text-secondary truncate">{title}</h3>
-                        <p className="text-base text-gray-500 truncate">{menu}</p>
+                        <div className="p-5 -mt-10 relative z-10">
+                            <h3 className="text-2xl font-black text-white truncate mb-1">{title}</h3>
+                            <p className="text-sm text-gray-400 truncate font-serif italic">{menu}</p>
+                        </div>
                     </button>
 
-                    <div className="flex items-center justify-center text-gray-300 font-bold">
-                        <Swords size={24} /> <span className="mx-2 text-base">VS</span> <Swords size={24} className="transform scale-x-[-1]" />
+                    <div className="flex items-center justify-center text-gray-600 font-black">
+                        <span className="text-xs tracking-[0.5em] uppercase">VS</span>
                     </div>
 
                      <button 
                         onClick={() => handleComparisonChoice('existing')}
-                        className="bg-white p-5 rounded-2xl shadow-md border-2 border-transparent active:border-secondary transition-all group text-left w-full active:scale-[0.98]"
+                        className="bg-[#1A1A1A] p-0 rounded-3xl shadow-lg border border-white/5 active:border-white transition-all group text-left w-full active:scale-[0.98] relative overflow-hidden"
                     >
-                        <div className="absolute top-0 right-0 bg-gray-200 text-gray-600 text-xs font-bold px-3 py-1 rounded-bl-lg z-10">Rank #{opponent.rank}</div>
-                        <div className="w-full h-40 bg-gray-100 rounded-xl mb-4 overflow-hidden">
-                             <img src={opponent.representativePhoto} className="w-full h-full object-cover" alt="Existing" />
+                        <div className="absolute top-0 right-0 bg-white text-black text-xs font-black px-4 py-1.5 rounded-bl-2xl z-10 uppercase tracking-wider">Rank #{opponent.rank}</div>
+                        <div className="w-full h-40 bg-gray-800 mb-0 overflow-hidden relative">
+                             <img src={opponent.representativePhoto} className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity" alt="Existing" />
+                             <div className="absolute inset-0 bg-gradient-to-t from-[#1A1A1A] to-transparent"></div>
                         </div>
-                        <h3 className="text-xl font-bold text-secondary truncate">{opponent.title}</h3>
-                        <p className="text-base text-gray-500 truncate">{opponent.menu}</p>
+                        <div className="p-5 -mt-10 relative z-10 text-right">
+                            <h3 className="text-2xl font-black text-white truncate mb-1">{opponent.title}</h3>
+                            <p className="text-sm text-gray-400 truncate font-serif italic">{opponent.menu}</p>
+                        </div>
                     </button>
                 </div>
             ) : (
                 <div className="flex items-center justify-center h-64">
-                     <Trophy className="text-yellow-400 animate-bounce mb-4" size={64} />
+                     <Trophy className="text-yellow-500 animate-bounce mb-4 drop-shadow-[0_0_15px_rgba(234,179,8,0.5)]" size={64} />
                 </div>
             )}
          </div>
@@ -636,8 +714,11 @@ export const CreateRecord: React.FC<CreateRecordProps> = ({ onSave, existingReco
     );
   };
 
+  // Missing Icon Shim
+  function Quote(props: any) { return <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M14.017 21L14.017 18C14.017 16.8954 14.9124 16 16.017 16H19.017C19.5693 16 20.017 15.5523 20.017 15V9C20.017 8.44772 19.5693 8 19.017 8H15.017C14.4647 8 14.017 8.44772 14.017 9V11C14.017 11.5523 13.5693 12 13.017 12H12.017V5H22.017V15C22.017 18.3137 19.3307 21 16.017 21H14.017ZM5.0166 21L5.0166 18C5.0166 16.8954 5.91203 16 7.0166 16H10.0166C10.5689 16 11.0166 15.5523 11.0166 15V9C11.0166 8.44772 10.5689 8 10.0166 8H6.0166C5.46432 8 5.0166 8.44772 5.0166 9V11C5.0166 11.5523 4.56889 12 4.0166 12H3.0166V5H13.0166V15C13.0166 18.3137 10.3303 21 7.0166 21H5.0166Z" /></svg>}
+
   return (
-    <Layout title="기록하기" showBack hasTabBar={false} scrollable={false}>
+    <Layout title="New Log" showBack hasTabBar={false} scrollable={false} backgroundColor="bg-black">
       {step === STEPS.PHOTOS && renderPhotosStep()}
       {step === STEPS.DETAILS && renderDetailsStep()}
       {step === STEPS.PREFERENCE && renderPreferenceStep()}

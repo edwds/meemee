@@ -1,30 +1,31 @@
+
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Trophy, Flame, Heart, MapPin, Crown, ChevronRight } from 'lucide-react';
+import { Trophy, Globe, MapPin, Crown, ChevronRight, Briefcase, Filter } from 'lucide-react';
 import { Layout } from '../components/Layout';
 import { BottomTabBar } from '../components/BottomTabBar';
-import { MOCK_ACTIVE_USERS, MOCK_POPULAR_USERS, MOCK_REGIONAL_DATA } from '../data/dummyData';
+import { MOCK_ACTIVE_USERS, MOCK_GROUP_USERS, MOCK_REGIONAL_DATA } from '../data/dummyData';
 import { LeaderboardUser } from '../types';
 
-type TabType = 'active' | 'popular' | 'regional';
+type TabType = 'group' | 'regional' | 'global';
 
 export const Leaderboard: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<TabType>('active');
+  const [activeTab, setActiveTab] = useState<TabType>('group');
   const [selectedRegion, setSelectedRegion] = useState<string>('성수');
 
-  const getTabIcon = (type: TabType) => {
+  const getTabInfo = (type: TabType) => {
     switch (type) {
-      case 'active': return <Flame size={16} className="mr-1" />;
-      case 'popular': return <Heart size={16} className="mr-1" />;
-      case 'regional': return <MapPin size={16} className="mr-1" />;
+      case 'group': return { label: '내 그룹', icon: Briefcase };
+      case 'regional': return { label: '지역별', icon: MapPin };
+      case 'global': return { label: '전체', icon: Globe };
     }
   };
 
   const regions = Object.keys(MOCK_REGIONAL_DATA);
 
   const getCurrentList = (): LeaderboardUser[] => {
-    if (activeTab === 'active') return MOCK_ACTIVE_USERS;
-    if (activeTab === 'popular') return MOCK_POPULAR_USERS;
+    if (activeTab === 'group') return MOCK_GROUP_USERS;
+    if (activeTab === 'global') return MOCK_ACTIVE_USERS; // Global reuses active for MVP
     if (activeTab === 'regional') return MOCK_REGIONAL_DATA[selectedRegion] || [];
     return [];
   };
@@ -32,127 +33,141 @@ export const Leaderboard: React.FC = () => {
   const userList = getCurrentList();
 
   return (
-    <Layout title="랭킹" hasTabBar={true} hideHeader={true}>
-      <div className="pb-4 pt-8 px-4 min-h-full">
+    <Layout title="랭킹" hasTabBar={true} hideHeader={true} backgroundColor="bg-black">
+      <div className="pb-8 pt-8 px-4 min-h-full bg-black text-white">
         
         {/* Custom Header Title */}
         <div className="mb-6 flex items-center justify-between px-1">
-            <h1 className="text-2xl font-black text-secondary tracking-tight">명예의 전당</h1>
-            <span className="text-xs font-bold text-primary bg-orange-50 px-2.5 py-1 rounded-full">
-                Rank
+            <h1 className="text-3xl font-black text-white tracking-tight">Leaderboard</h1>
+            <span className="text-xs font-bold text-black bg-yellow-400 px-3 py-1 rounded-full uppercase tracking-wider">
+                Top Rankers
             </span>
         </div>
 
         {/* Tabs */}
-        <div className="flex p-1 bg-gray-100 rounded-xl mb-6">
-          {(['active', 'popular', 'regional'] as TabType[]).map((tab) => (
-            <button
-              key={tab}
-              onClick={() => setActiveTab(tab)}
-              className={`flex-1 flex items-center justify-center py-2.5 rounded-lg text-xs font-bold transition-all ${
-                activeTab === tab 
-                  ? 'bg-white text-secondary shadow-sm' 
-                  : 'text-gray-400 hover:text-gray-600'
-              }`}
-            >
-              {getTabIcon(tab)}
-              {tab === 'active' ? '활동왕' : tab === 'popular' ? '인기왕' : '지역별'}
-            </button>
-          ))}
-        </div>
-
-        {/* Region Filter (Only for Regional Tab) */}
-        {activeTab === 'regional' && (
-          <div className="flex gap-2 overflow-x-auto no-scrollbar pb-4 mb-2">
-            {regions.map(region => (
+        <div className="flex p-1 bg-[#1A1A1A] rounded-2xl mb-6 border border-white/5 relative">
+          {(['group', 'regional', 'global'] as TabType[]).map((tab) => {
+            const info = getTabInfo(tab);
+            const Icon = info.icon;
+            const isActive = activeTab === tab;
+            return (
               <button
-                key={region}
-                onClick={() => setSelectedRegion(region)}
-                className={`px-4 py-2 rounded-full text-xs font-bold whitespace-nowrap transition-colors ${
-                  selectedRegion === region 
-                    ? 'bg-secondary text-white' 
-                    : 'bg-white border border-gray-200 text-gray-500'
+                key={tab}
+                onClick={() => setActiveTab(tab)}
+                className={`flex-1 flex items-center justify-center py-3 rounded-xl text-xs font-bold transition-all relative z-10 ${
+                  isActive 
+                    ? 'text-black' 
+                    : 'text-gray-500 hover:text-gray-300'
                 }`}
               >
-                {region}
+                {isActive && (
+                    <div className="absolute inset-0 bg-white rounded-xl shadow-md -z-10 animate-fade-in"></div>
+                )}
+                <Icon size={14} className="mr-1.5" strokeWidth={2.5} />
+                {info.label}
               </button>
-            ))}
-          </div>
-        )}
+            );
+          })}
+        </div>
 
-        {/* Description */}
-        <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-lg font-bold text-secondary">
-            {activeTab === 'active' && '이번 달 열정 미식가 🔥'}
-            {activeTab === 'popular' && '가장 사랑받는 미식가 💖'}
-            {activeTab === 'regional' && `${selectedRegion}의 터줏대감 🗺️`}
-          </h2>
-          <span className="text-[10px] text-gray-400">실시간 업데이트</span>
+        {/* Filter & Sub-header */}
+        <div className="mb-6 flex items-center justify-between">
+            {activeTab === 'regional' ? (
+                 <div className="flex gap-2 overflow-x-auto no-scrollbar mask-linear-fade flex-1 mr-4">
+                    {regions.map(region => (
+                    <button
+                        key={region}
+                        onClick={() => setSelectedRegion(region)}
+                        className={`px-3 py-1.5 rounded-full text-[10px] font-bold whitespace-nowrap transition-colors border ${
+                        selectedRegion === region 
+                            ? 'bg-primary border-primary text-white' 
+                            : 'bg-transparent border-white/10 text-gray-400 hover:border-white/30'
+                        }`}
+                    >
+                        {region}
+                    </button>
+                    ))}
+                </div>
+            ) : (
+                <div className="flex-1">
+                    <h2 className="text-sm font-bold text-gray-300 flex items-center gap-2">
+                        {activeTab === 'group' && 'Startup Crew 🚀'}
+                        {activeTab === 'global' && 'Global Ranking 🌎'}
+                    </h2>
+                </div>
+            )}
+            
+            {/* Filter Button */}
+            <button className="w-8 h-8 rounded-full bg-[#1A1A1A] border border-white/10 flex items-center justify-center text-gray-400 hover:text-white transition-colors flex-shrink-0">
+                <Filter size={14} />
+            </button>
         </div>
 
         {/* List */}
         <div className="space-y-3">
           {userList.map((user, index) => {
-            const isTop3 = index < 3;
-            let rankColor = 'bg-gray-100 text-gray-500';
+            let rankColor = 'text-gray-500';
+            let rankBg = 'bg-[#252525]';
             let rankIcon = null;
             
             if (index === 0) {
-              rankColor = 'bg-yellow-100 text-yellow-700 border border-yellow-200';
-              rankIcon = <Crown size={12} className="absolute -top-1.5 -right-1.5 text-yellow-500 transform rotate-12" />;
+              rankColor = 'text-yellow-400';
+              rankBg = 'bg-yellow-400/10 border-yellow-400/20';
+              rankIcon = <Crown size={12} className="absolute -top-1 -right-1 text-yellow-400 transform rotate-12 fill-yellow-400" />;
             } else if (index === 1) {
-              rankColor = 'bg-gray-200 text-gray-600 border border-gray-300';
+              rankColor = 'text-gray-300';
+              rankBg = 'bg-gray-400/10 border-gray-400/20';
             } else if (index === 2) {
-              rankColor = 'bg-orange-100 text-orange-700 border border-orange-200';
+              rankColor = 'text-orange-400';
+              rankBg = 'bg-orange-400/10 border-orange-400/20';
             }
 
             return (
               <Link 
                 key={user.id} 
                 to={`/profile/${user.name}`}
-                className="block active:scale-[0.99] transition-transform"
+                className="block active:scale-[0.98] transition-transform"
               >
-                <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 flex items-center relative overflow-hidden">
-                   {/* Gradient Highlight for #1 */}
-                   {index === 0 && <div className="absolute top-0 left-0 w-1 h-full bg-yellow-400"></div>}
-
+                <div className="bg-[#1A1A1A] rounded-2xl p-4 border border-white/5 flex items-center relative overflow-hidden hover:bg-[#222] transition-colors group">
+                   
                    {/* Rank */}
-                   <div className={`w-8 h-8 rounded-lg flex items-center justify-center font-black text-sm mr-4 relative flex-shrink-0 ${rankColor}`}>
+                   <div className={`w-8 h-8 rounded-lg flex items-center justify-center font-black text-base mr-4 relative flex-shrink-0 border border-transparent ${rankBg} ${rankColor}`}>
                       {user.rank}
                       {rankIcon}
                    </div>
 
                    {/* Avatar */}
-                   <div className="w-12 h-12 rounded-full p-0.5 bg-gradient-to-tr from-gray-100 to-gray-300 mr-3 flex-shrink-0">
-                      <img src={user.avatar} alt={user.name} className="w-full h-full object-cover rounded-full border border-white" />
+                   <div className="w-12 h-12 rounded-full p-0.5 bg-gradient-to-tr from-gray-700 to-gray-600 mr-3 flex-shrink-0 relative">
+                      <img src={user.avatar} alt={user.name} className="w-full h-full object-cover rounded-full border border-[#1A1A1A]" />
+                      <div className="absolute -bottom-1 -right-1 bg-black text-[9px] text-white px-1.5 py-0.5 rounded border border-white/10 font-bold">
+                        Lv.{user.level}
+                      </div>
                    </div>
 
                    {/* Info */}
                    <div className="flex-1 min-w-0 mr-2">
-                      <div className="flex items-center gap-1.5 mb-0.5">
-                        <h3 className="font-bold text-secondary text-sm truncate">{user.name}</h3>
-                        <span className="text-[9px] bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded font-bold">Lv.{user.level}</span>
+                      <div className="flex items-center gap-2 mb-1">
+                        <h3 className="font-bold text-white text-base truncate">{user.name}</h3>
+                        <span className="text-[9px] text-primary font-black bg-primary/10 px-1.5 py-0.5 rounded uppercase tracking-wider border border-primary/20">
+                            {user.mbti}
+                        </span>
                       </div>
-                      <div className="flex items-center gap-2">
-                         <span className="text-[9px] text-primary font-bold bg-orange-50 px-1.5 rounded border border-orange-100">{user.mbti}</span>
-                      </div>
+                      <p className="text-xs text-gray-500 truncate font-medium">"{user.nuance}"</p>
                    </div>
 
                    {/* Stats */}
                    <div className="text-right">
-                      <div className="text-sm font-black text-secondary">{user.stats.count}</div>
-                      <div className="text-[9px] text-gray-400 font-medium">{user.stats.label}</div>
+                      <div className="text-sm font-black text-white">{user.stats.count}</div>
+                      <div className="text-[9px] text-gray-500 font-bold uppercase tracking-wide">{user.stats.label}</div>
                    </div>
-
-                   <ChevronRight size={16} className="text-gray-300 ml-2" />
                 </div>
               </Link>
             );
           })}
 
           {userList.length === 0 && (
-            <div className="text-center py-12 bg-white rounded-2xl border border-dashed border-gray-200">
-               <p className="text-gray-400 text-xs">아직 랭킹 데이터가 없어요 🥲</p>
+            <div className="text-center py-12 bg-[#1A1A1A] rounded-2xl border border-dashed border-white/5">
+               <p className="text-gray-500 text-xs">아직 랭킹 데이터가 없어요 🥲</p>
             </div>
           )}
         </div>
