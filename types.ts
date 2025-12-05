@@ -1,3 +1,4 @@
+import React from 'react';
 
 export enum Preference {
   GOOD = '좋아요',
@@ -22,6 +23,18 @@ export interface TasteProfile {
   richness: number;
 }
 
+export interface DetailedEvaluation {
+  venue: {
+    atmosphere: string[];
+    service: string[];
+  };
+  menu: {
+    texture: string[];
+    flavor: string[];
+    note: string[];
+  };
+}
+
 export interface LocationData {
   lat: number;
   lng: number;
@@ -39,8 +52,9 @@ export interface ReviewRecord {
   visitDate: string; // YYYY-MM-DD
   companions: string; // Who you went with
   tasteProfile: TasteProfile;
+  detailedEvaluation?: DetailedEvaluation;
   keywords: string[];
-  aiGeneratedText: string;
+  reviewText: string; // Manually written review (formerly aiGeneratedText)
   createdAt: number; // Timestamp
   rank?: number; // Optional ranking for 'GOOD' preference records
   location?: LocationData;

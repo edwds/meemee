@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Trophy, Flame, Heart, MapPin, Crown, ChevronRight } from 'lucide-react';
@@ -33,9 +32,17 @@ export const Leaderboard: React.FC = () => {
   const userList = getCurrentList();
 
   return (
-    <Layout title="랭킹" hasTabBar={true}>
-      <div className="pb-4 pt-2 px-4 min-h-full">
+    <Layout title="랭킹" hasTabBar={true} hideHeader={true}>
+      <div className="pb-4 pt-8 px-4 min-h-full">
         
+        {/* Custom Header Title */}
+        <div className="mb-6 flex items-center justify-between px-1">
+            <h1 className="text-2xl font-black text-secondary tracking-tight">명예의 전당</h1>
+            <span className="text-xs font-bold text-primary bg-orange-50 px-2.5 py-1 rounded-full">
+                Rank
+            </span>
+        </div>
+
         {/* Tabs */}
         <div className="flex p-1 bg-gray-100 rounded-xl mb-6">
           {(['active', 'popular', 'regional'] as TabType[]).map((tab) => (

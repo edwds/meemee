@@ -1,9 +1,8 @@
-
 import React, { useMemo } from 'react';
 import { Layout } from '../components/Layout';
 import { ReviewRecord } from '../types';
-import { calculateLevel, BADGES } from '../utils/gamification';
-import { Trophy, Lock, Camera, MapPin, PenTool, Star, Target, Award } from 'lucide-react';
+import { calculateLevel, BADGES, calculateGourmetMBTI } from '../utils/gamification';
+import { Trophy, Lock, Camera, MapPin, PenTool, Star, Target, Award, TrendingUp, Hash } from 'lucide-react';
 
 interface AchievementProps {
   records: ReviewRecord[];
@@ -12,6 +11,7 @@ interface AchievementProps {
 export const Achievement: React.FC<AchievementProps> = ({ records }) => {
   const { level, nextLevelThreshold, progress } = calculateLevel(records.length);
   const earnedBadgeIds = BADGES.filter(b => b.condition(records)).map(b => b.id);
+  const mbti = useMemo(() => calculateGourmetMBTI(records), [records]);
   
   // --- Detailed Stats Calculation ---
   const stats = useMemo(() => {
@@ -23,6 +23,20 @@ export const Achievement: React.FC<AchievementProps> = ({ records }) => {
         : 0;
 
     return { totalPhotos, totalAreas, totalWords, goodRatio };
+  }, [records]);
+
+  // Calculate Top Keywords
+  const topKeywords = useMemo(() => {
+    const counts: Record<string, number> = {};
+    records.forEach(r => {
+        r.keywords.forEach(k => {
+            counts[k] = (counts[k] || 0) + 1;
+        });
+    });
+    return Object.entries(counts)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 5)
+        .map(([key]) => key);
   }, [records]);
 
   // --- Next Quest Logic ---
@@ -40,6 +54,21 @@ export const Achievement: React.FC<AchievementProps> = ({ records }) => {
           message: "모든 업적을 달성했습니다! 당신은 진정한 미식 마스터!"
       };
   }, [earnedBadgeIds]);
+
+  const renderTasteRow = (label: string, value: number, colorClass: string) => (
+    <div className="mb-3">
+        <div className="flex justify-between items-end mb-1">
+            <span className="text-xs font-bold text-gray-400">{label}</span>
+            <span className="text-xs font-bold text-secondary">{value.toFixed(1)}</span>
+        </div>
+        <div className="h-2 w-full bg-gray-100 rounded-full overflow-hidden">
+            <div 
+                className={`h-full rounded-full transition-all duration-1000 ${colorClass}`} 
+                style={{ width: `${(value / 5) * 100}%` }} 
+            />
+        </div>
+    </div>
+  );
 
   return (
     <Layout title="미식 여정" showBack hasTabBar={true}>
@@ -110,9 +139,48 @@ export const Achievement: React.FC<AchievementProps> = ({ records }) => {
             </section>
         )}
 
-        {/* 3. DETAILED STATS GRID */}
+        {/* 3. TASTE DNA & DETAILED STATS */}
         <section className="mb-8">
-             <h3 className="font-bold text-secondary text-lg mb-4 px-1">활동 요약</h3>
+             <div className="flex items-center gap-2 mb-4 px-1">
+                 <TrendingUp className="text-primary" size={20} />
+                 <h3 className="font-bold text-secondary text-lg">미식 데이터</h3>
+             </div>
+
+             {/* Taste Bars */}
+             <div className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm mb-4">
+                <h4 className="text-sm font-bold text-secondary mb-4">입맛 DNA</h4>
+                {mbti ? (
+                     <div className="grid grid-cols-2 gap-x-8 gap-y-2">
+                        {renderTasteRow('맵기 (Kick)', mbti.scores.spiciness, 'bg-red-400')}
+                        {renderTasteRow('단맛 (Main)', mbti.scores.sweetness, 'bg-pink-400')}
+                        {renderTasteRow('짠맛 (Main)', mbti.scores.saltiness, 'bg-blue-400')}
+                        {renderTasteRow('풍미 (Body)', mbti.scores.richness, 'bg-orange-400')}
+                    </div>
+                ) : (
+                    <div className="text-center py-6 text-xs text-gray-400">
+                        데이터가 충분하지 않습니다.
+                    </div>
+                )}
+
+                {/* Top Keywords */}
+                {topKeywords.length > 0 && (
+                    <div className="mt-4 pt-4 border-t border-gray-50">
+                        <div className="flex items-center gap-2 mb-3">
+                            <Hash size={16} className="text-gray-400" />
+                            <span className="text-xs font-bold text-gray-400">자주 쓰는 표현</span>
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                            {topKeywords.map(k => (
+                                <span key={k} className="px-3 py-1.5 bg-gray-100 text-gray-600 rounded-lg text-xs font-bold border border-gray-200">
+                                    #{k}
+                                </span>
+                            ))}
+                        </div>
+                    </div>
+                )}
+             </div>
+
+             {/* Stats Grid */}
              <div className="grid grid-cols-2 gap-3">
                 <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm flex flex-col justify-between h-24">
                     <div className="flex justify-between items-start">

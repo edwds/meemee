@@ -1,4 +1,3 @@
-
 import React, { useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { MapPin, Users, Utensils, ArrowRight, Compass, Zap, TrendingUp, Flag } from 'lucide-react';
@@ -163,8 +162,16 @@ export const Discover: React.FC<DiscoverProps> = ({ userRecords }) => {
   );
 
   return (
-    <Layout title="디스커버" hasTabBar={true}>
-      <div className="pb-4 pt-2">
+    <Layout title="디스커버" hasTabBar={true} hideHeader={true}>
+      <div className="pb-4 pt-8">
+        
+        {/* Custom Header Title */}
+        <div className="px-5 mb-6 flex items-center justify-between">
+            <h1 className="text-2xl font-black text-secondary tracking-tight">디스커버</h1>
+            <span className="text-xs font-bold text-primary bg-orange-50 px-2.5 py-1 rounded-full">
+                Explore
+            </span>
+        </div>
         
         {/* 1. Personalized Recommendation */}
         <HorizontalSection 
